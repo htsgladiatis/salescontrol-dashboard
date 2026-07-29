@@ -3,173 +3,68 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SalesControl — Ежедневный отчёт · LIVE</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <title>SalesControl — Отчёты РОПа · LIVE</title>
+  <link rel="stylesheet" href="css/styles.css">
   <style>
-    :root {
-      --bg-primary: #0f1419;
-      --bg-secondary: #1a1f26;
-      --bg-card: #1e242e;
-      --bg-elevated: #252b36;
-      --border: #2a3140;
-      --text-primary: #e8eaed;
-      --text-secondary: #9aa0a6;
-      --text-muted: #6b7280;
-      --accent-purple: #7c3aed;
-      --accent-blue: #2563eb;
-      --accent-green: #10b981;
-      --accent-red: #ef4444;
-      --accent-yellow: #f59e0b;
-      --radius-sm: 6px;
-      --radius-md: 10px;
-      --radius-lg: 14px;
-      --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
-      --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      font-size: 14px;
-      line-height: 1.5;
-      min-height: 100vh;
-    }
-    .app { display: flex; min-height: 100vh; }
-    .sidebar {
-      width: 240px; background: var(--bg-secondary);
-      border-right: 1px solid var(--border);
-      padding: 24px 16px; flex-shrink: 0;
-    }
-    .sidebar__logo {
-      display: flex; align-items: center; gap: 10px;
-      margin-bottom: 32px; font-weight: 700; font-size: 18px;
-    }
-    .logo-icon {
-      background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
-      width: 32px; height: 32px; border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px;
-    }
-    .sidebar__nav { display: flex; flex-direction: column; gap: 4px; }
-    .nav-item {
-      display: flex; align-items: center; gap: 12px;
-      padding: 10px 12px; border-radius: var(--radius-sm);
-      color: var(--text-secondary); text-decoration: none;
-      transition: all 0.15s ease; font-size: 14px; font-weight: 500;
-      cursor: pointer;
-    }
-    .nav-item:hover { background: var(--bg-elevated); color: var(--text-primary); }
-    .nav-item--active {
-      background: linear-gradient(90deg, rgba(124,58,237,0.2), rgba(37,99,235,0.05));
-      color: var(--text-primary);
-    }
-    .nav-icon { font-size: 16px; }
+    /* ============================================================
+       Subpage-specific additions only.
+       All shared design tokens come from css/styles.css (single source of truth).
+       ============================================================ */
 
-    .main { flex: 1; padding: 24px 32px; max-width: 1500px; }
-
-    .page-header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+    /* LIVE pulse dot in sidebar */
+    .live-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent-green);
+      box-shadow: 0 0 8px var(--accent-green);
+      animation: live-pulse 2s ease-in-out infinite;
     }
-    .page-title { font-size: 24px; font-weight: 700; }
-    .page-subtitle { color: var(--text-secondary); font-size: 14px; margin-top: 4px; }
-
-    .controls {
-      display: flex; align-items: center; gap: 10px;
-      flex-wrap: wrap;
-    }
-    .date-picker, .month-picker, .view-toggle {
-      display: flex; align-items: center; gap: 10px;
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius-md); padding: 8px 14px;
-      font-size: 13px; color: var(--text-secondary);
-    }
-    .date-picker input[type="date"], .month-picker input[type="month"] {
-      background: transparent; border: none; color: var(--text-primary);
-      font-family: inherit; font-size: 13px; outline: none; cursor: pointer;
-    }
-    .date-picker input::-webkit-calendar-picker-indicator,
-    .month-picker input::-webkit-calendar-picker-indicator {
-      filter: invert(0.8); cursor: pointer;
-    }
-    .view-toggle button {
-      background: transparent; border: none; color: var(--text-secondary);
-      font-family: inherit; font-size: 13px; padding: 6px 10px;
-      border-radius: var(--radius-sm); cursor: pointer; font-weight: 500;
-    }
-    .view-toggle button:hover { background: var(--bg-elevated); color: var(--text-primary); }
-    .view-toggle button.active {
-      background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
-      color: white;
+    @keyframes live-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.4); }
     }
 
-    .summary-row {
-      display: grid; grid-template-columns: repeat(4, 1fr);
-      gap: 16px; margin-bottom: 24px;
-    }
-    .card {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius-lg); padding: 20px;
-      box-shadow: var(--shadow-sm);
-    }
-    .summary-card__label {
-      color: var(--text-secondary); font-size: 12px;
-      text-transform: uppercase; letter-spacing: 0.05em;
-      font-weight: 600; margin-bottom: 8px;
-    }
-    .summary-card__value { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
-    .summary-card__delta { font-size: 12px; color: var(--text-muted); }
-    .summary-card--reported .summary-card__value { color: var(--accent-green); }
-    .summary-card--pending .summary-card__value { color: var(--accent-yellow); }
-    .summary-card--missing .summary-card__value { color: var(--accent-red); }
-
-    .progress-section {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius-lg); padding: 24px; margin-bottom: 24px;
-    }
-    .progress-header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 14px;
-    }
+    /* Progress section (no equivalent in main dashboard) */
+    .progress-section { padding: 24px; }
+    .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
     .progress-title { font-size: 16px; font-weight: 600; }
     .progress-percent { font-size: 22px; font-weight: 700; color: var(--accent-purple); }
-    .progress-bar { height: 12px; background: var(--bg-elevated); border-radius: 999px; overflow: hidden; }
+    .progress-bar { height: 12px; background: var(--bg-card); border-radius: 999px; overflow: hidden; }
     .progress-fill {
-      height: 100%; background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue));
-      border-radius: 999px; transition: width 0.4s ease;
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue));
+      border-radius: 999px;
+      transition: width 0.4s ease;
     }
-    .progress-meta {
-      display: flex; justify-content: space-between;
-      margin-top: 8px; font-size: 12px; color: var(--text-muted);
-    }
+    .progress-meta { display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; color: var(--text-secondary); }
 
-    .reports-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    /* Two-column report tables row */
+    .reports-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    @media (max-width: 1024px) { .reports-row { grid-template-columns: 1fr; } }
+
     .report-table { display: flex; flex-direction: column; }
     .report-table__header {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      padding: 16px 20px; border-bottom: 1px solid var(--border-color);
     }
     .report-table__title { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-    .reported-badge { background: rgba(16,185,129,0.15); color: var(--accent-green); padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-    .pending-badge { background: rgba(245,158,11,0.15); color: var(--accent-yellow); padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-
+    .reported-badge {
+      background: rgba(16,185,129,0.15); color: var(--accent-green);
+      padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
+    }
+    .pending-badge {
+      background: rgba(245,158,11,0.15); color: var(--accent-yellow);
+      padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
+    }
     .report-table table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .report-table th {
       text-align: left; padding: 12px 20px;
       font-weight: 600; font-size: 11px; text-transform: uppercase;
-      letter-spacing: 0.05em; color: var(--text-secondary); background: var(--bg-elevated);
+      letter-spacing: 0.05em; color: var(--text-secondary); background: var(--bg-card);
     }
-    .report-table td { padding: 14px 20px; border-bottom: 1px solid var(--border); }
+    .report-table td { padding: 14px 20px; border-bottom: 1px solid var(--border-color); }
     .report-table tr:last-child td { border-bottom: none; }
-    .report-table tr:hover td { background: var(--bg-elevated); }
+    .report-table tr:hover td { background: var(--bg-card); }
     .manager-cell { display: flex; align-items: center; gap: 10px; }
-    .avatar {
-      width: 32px; height: 32px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 700; color: white; flex-shrink: 0;
-    }
-    .avatar--sm { width: 28px; height: 28px; font-size: 10px; }
     .manager-name { font-weight: 500; }
     .severity-critical { color: var(--accent-red); font-weight: 600; }
     .severity-warning { color: var(--accent-yellow); font-weight: 600; }
@@ -177,312 +72,353 @@
     .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
     .status-dot--critical { background: var(--accent-red); }
     .status-dot--warning { background: var(--accent-yellow); }
-    .status-dot--info { background: var(--text-muted); }
+    .status-dot--info { background: var(--text-secondary); }
 
     /* Monthly heatmap */
-    .heatmap-wrap { overflow-x: auto; padding-bottom: 8px; }
+    .heatmap-wrap { overflow-x: auto; padding: 4px; }
     .heatmap {
       display: grid;
       grid-template-columns: 220px repeat(31, 32px);
-      gap: 2px;
-      font-size: 11px;
-      min-width: 100%;
+      gap: 2px; font-size: 11px; min-width: 100%;
     }
     .heatmap__cell {
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 4px;
-      font-size: 10px;
-      color: var(--text-secondary);
-    }
-    .heatmap__cell--head {
-      background: var(--bg-elevated);
-      color: var(--text-secondary);
-      font-weight: 600;
+      height: 32px; display: flex; align-items: center; justify-content: center;
+      border-radius: 4px; font-size: 10px; color: var(--text-secondary);
     }
     .heatmap__cell--name {
-      background: transparent;
-      justify-content: flex-start;
-      padding-left: 12px;
-      font-size: 12px;
-      color: var(--text-primary);
-      gap: 8px;
+      background: transparent; justify-content: flex-start;
+      padding-left: 12px; font-size: 12px; color: var(--text-primary); gap: 8px;
     }
     .heatmap__cell--day-num {
-      background: var(--bg-card);
-      color: var(--text-muted);
-      font-size: 10px;
-      border: 1px solid var(--border);
+      background: var(--bg-secondary); color: var(--text-secondary);
+      font-size: 10px; border: 1px solid var(--border-color);
     }
     .heatmap__cell--weekend { background: rgba(124,58,237,0.08); }
-    .heatmap__cell--reported { background: var(--accent-green); color: white; }
-    .heatmap__cell--missing-critical { background: var(--accent-red); color: white; }
+    .heatmap__cell--reported { background: var(--accent-green); color: white; font-weight: 700; }
 
-    .empty-state {
-      padding: 40px 20px; text-align: center;
-      color: var(--text-muted); font-size: 13px;
+    /* Action buttons (use dashboard tokens) */
+    .actions-row { display: flex; gap: 12px; padding: 16px 0; flex-wrap: wrap; }
+    .action-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 18px; border-radius: 10px;
+      background: var(--bg-secondary); border: 1px solid var(--border-color);
+      color: var(--text-primary); cursor: pointer;
+      font-size: 13px; font-weight: 500;
+      font-family: inherit; text-decoration: none;
+      transition: all 0.15s ease;
     }
+    .action-btn:hover { background: var(--bg-card); border-color: var(--accent-purple); transform: translateY(-1px); }
+    .action-btn--primary {
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+      border: none; color: white;
+    }
+    .action-btn--primary:hover { filter: brightness(1.1); }
+
+    .empty-state { padding: 40px 20px; text-align: center; color: var(--text-secondary); font-size: 13px; }
     .skeleton {
-      background: linear-gradient(90deg, var(--bg-card) 0%, var(--bg-elevated) 50%, var(--bg-card) 100%);
+      background: linear-gradient(90deg, var(--bg-secondary) 0%, var(--bg-card) 50%, var(--bg-secondary) 100%);
       background-size: 200% 100%;
       animation: shimmer 1.5s infinite;
-      color: transparent;
-      border-radius: 4px;
+      color: transparent; border-radius: 4px;
     }
-    @keyframes shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-    /* Sticky error banner — only renders if fetch fails */
     .error-banner {
-      background: rgba(239,68,68,0.1);
-      border: 1px solid var(--accent-red);
-      color: var(--accent-red);
-      border-radius: var(--radius-md);
-      padding: 14px 20px;
-      margin-bottom: 16px;
-      font-size: 13px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      background: rgba(239,68,68,0.1); border: 1px solid var(--accent-red);
+      color: var(--accent-red); border-radius: 10px;
+      padding: 14px 20px; margin-bottom: 16px; font-size: 13px;
+      display: flex; align-items: center; gap: 12px;
     }
     .error-banner__icon { font-size: 18px; }
     .error-banner__text { flex: 1; }
     .error-banner__retry {
-      background: var(--accent-red);
-      color: white;
-      border: none;
-      border-radius: var(--radius-sm);
-      padding: 6px 14px;
-      font-size: 12px;
-      cursor: pointer;
-      font-family: inherit;
-      font-weight: 500;
+      background: var(--accent-red); color: white; border: none;
+      border-radius: 6px; padding: 6px 14px; font-size: 12px;
+      cursor: pointer; font-family: inherit; font-weight: 500;
     }
     .error-banner__retry:hover { filter: brightness(1.1); }
 
-    .actions-row { display: flex; gap: 12px; padding: 8px 0; flex-wrap: wrap; }
-    .action-btn {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius-md); padding: 12px 20px;
-      color: var(--text-primary); cursor: pointer;
-      font-size: 13px; font-weight: 500;
-      display: flex; align-items: center; gap: 8px;
-      text-decoration: none; transition: all 0.15s ease;
-      font-family: inherit;
-    }
-    .action-btn:hover { background: var(--bg-elevated); border-color: var(--accent-purple); transform: translateY(-1px); }
-    .action-btn--primary { background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); border: none; color: white; }
-    .action-btn--primary:hover { filter: brightness(1.1); border: none; }
-    .action-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-    .action-btn--lg { padding: 14px 24px; font-size: 14px; }
-
     .toast {
       position: fixed; bottom: 24px; right: 24px;
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius-md); padding: 14px 20px;
-      box-shadow: var(--shadow-md); font-size: 13px;
+      background: var(--bg-secondary); border: 1px solid var(--border-color);
+      border-radius: 10px; padding: 14px 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4); font-size: 13px;
       max-width: 380px; z-index: 100;
-      animation: slideIn 0.3s ease;
+      animation: slideIn 0.3s ease; color: var(--text-primary);
     }
-    @keyframes slideIn {
-      from { transform: translateY(20px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
+    @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     .toast--error { border-color: var(--accent-red); color: var(--accent-red); }
 
     .loader-bar {
       position: fixed; top: 0; left: 0; right: 0;
-      height: 3px; background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue));
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue));
       transform-origin: left; transform: scaleX(0);
-      transition: transform 0.3s ease;
-      z-index: 200;
+      transition: transform 0.3s ease; z-index: 200;
     }
     .loader-bar.active { animation: loader-bar-anim 1s ease-in-out infinite; }
     @keyframes loader-bar-anim {
-      0% { transform: scaleX(0); }
-      50% { transform: scaleX(0.8); }
-      100% { transform: scaleX(1); }
+      0% { transform: scaleX(0); } 50% { transform: scaleX(0.8); } 100% { transform: scaleX(1); }
     }
 
-    @media (max-width: 1024px) {
-      .reports-row { grid-template-columns: 1fr; }
-      .summary-row { grid-template-columns: repeat(2, 1fr); }
+    /* Date / month pickers — styled to match dashboard inputs */
+    .header__filter {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg-secondary); border: 1px solid var(--border-color);
+      border-radius: 8px; padding: 8px 14px;
+      font-size: 13px; color: var(--text-secondary);
     }
-    @media (max-width: 768px) {
-      .app { flex-direction: column; }
-      .sidebar { width: 100%; }
-      .main { padding: 16px; }
-      .summary-row { grid-template-columns: 1fr; }
-      .actions-row { flex-direction: column; align-items: stretch; }
+    .header__filter input[type="date"], .header__filter input[type="month"] {
+      background: transparent; border: none; color: var(--text-primary);
+      font-family: inherit; font-size: 13px; outline: none; cursor: pointer;
+    }
+    .header__filter input::-webkit-calendar-picker-indicator { filter: invert(0.8); cursor: pointer; }
+    .view-toggle {
+      display: flex; align-items: center; gap: 4px;
+      background: var(--bg-secondary); border: 1px solid var(--border-color);
+      border-radius: 8px; padding: 4px;
+    }
+    .view-toggle button {
+      background: transparent; border: none; color: var(--text-secondary);
+      font-family: inherit; font-size: 13px; padding: 6px 12px;
+      border-radius: 6px; cursor: pointer; font-weight: 500;
+    }
+    .view-toggle button:hover { background: var(--bg-card); color: var(--text-primary); }
+    .view-toggle button.active {
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+      color: white;
+    }
+    .nav-badge--live {
+      background: rgba(16,185,129,0.18); color: var(--accent-green);
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 700;
     }
   </style>
 </head>
 <body>
   <div class="app">
     <aside class="sidebar">
+      <!-- Логотип -->
       <div class="sidebar__logo">
         <span class="logo-icon">⚡</span>
         <span class="logo-text">SalesControl</span>
       </div>
+
+      <!-- Навигация (1:1 copy of dashboard, with Дашборд→index.html and Отчёты РОПа active) -->
       <nav class="sidebar__nav">
-        <a class="nav-item" href="#" id="nav-dashboard">
+        <a class="nav-item" href="index.html">
           <span class="nav-icon">🏠</span><span class="nav-label">Дашборд</span>
         </a>
-        <a class="nav-item" href="#" id="nav-sales">
+        <a class="nav-item" href="#">
           <span class="nav-icon">📊</span><span class="nav-label">Продажи</span>
         </a>
-        <a class="nav-item" href="#" id="nav-managers">
+        <a class="nav-item" href="#">
           <span class="nav-icon">👥</span><span class="nav-label">Менеджеры</span>
         </a>
-        <a class="nav-item nav-item--active" href="#daily-reports" id="nav-reports">
-          <span class="nav-icon">📋</span><span class="nav-label">Отчёты РОПа</span>
-          <span style="margin-left:auto;font-size:10px;background:rgba(124,58,237,0.3);padding:2px 6px;border-radius:4px;color:#c4b5fd;">NEW</span>
+        <a class="nav-item" href="#">
+          <span class="nav-icon">🗺</span><span class="nav-label">География</span>
         </a>
-        <a class="nav-item" href="#" id="nav-history">
-          <span class="nav-icon">📈</span><span class="nav-label">История</span>
+        <a class="nav-item" href="#">
+          <span class="nav-icon">📦</span><span class="nav-label">Продукты</span>
+        </a>
+        <a class="nav-item" href="#">
+          <span class="nav-icon">💰</span><span class="nav-label">Финансы</span>
+        </a>
+        <a class="nav-item" href="#">
+          <span class="nav-icon">📈</span><span class="nav-label">Прогнозы</span>
+        </a>
+        <a class="nav-item" href="#">
+          <span class="nav-icon">🔔</span><span class="nav-label">Оповещения</span>
+          <span class="badge badge--red nav-badge">8</span>
+        </a>
+        <a class="nav-item nav-item--active" href="#">
+          <span class="nav-icon">📋</span><span class="nav-label">Отчёты РОПа</span>
+          <span class="nav-badge--live"><span class="live-dot"></span>LIVE</span>
+        </a>
+        <a class="nav-item" href="#">
+          <span class="nav-icon">⚙</span><span class="nav-label">Настройки</span>
         </a>
       </nav>
+
+      <!-- Онлайн менеджеры (1:1 with dashboard) -->
+      <div class="sidebar__managers">
+        <div class="managers__header">
+          <span>Онлайн менеджеры</span>
+          <span class="managers__count" id="sidebar-mgr-count">—/—</span>
+        </div>
+        <div class="managers__avatars" id="sidebar-mgr-avatars">
+          <div class="avatar avatar--sm" style="background:var(--accent-purple)">АС</div>
+          <div class="avatar avatar--sm" style="background:var(--accent-blue)">ЕИ</div>
+          <div class="avatar avatar--sm" style="background:var(--accent-green)">ДП</div>
+          <div class="avatar avatar--sm" style="background:var(--accent-yellow)">МК</div>
+          <div class="avatar avatar--sm" style="background:var(--accent-red)">ОС</div>
+          <div class="avatar avatar--sm" style="background:var(--accent-purple)">НВ</div>
+          <div class="avatar avatar--sm" style="background:var(--accent-blue)">АМ</div>
+          <div class="avatar avatar--sm" style="background:var(--accent-green)">+32</div>
+        </div>
+      </div>
+
+      <!-- Мобильное приложение (1:1 with dashboard) -->
+      <div class="sidebar__mobile-app">
+        <div class="mobile-app__title">Мобильное приложение</div>
+        <div class="mobile-app__desc">Сканируйте чек, отслеживайте продажи в реальном времени</div>
+        <div class="qr-code">
+          <svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+            <rect width="80" height="80" fill="#0d0d1a" rx="4"/>
+            <rect x="8" y="8" width="22" height="22" fill="none" stroke="#7c3aed" stroke-width="3" rx="2"/>
+            <rect x="13" y="13" width="12" height="12" fill="#7c3aed" rx="1"/>
+            <rect x="50" y="8" width="22" height="22" fill="none" stroke="#7c3aed" stroke-width="3" rx="2"/>
+            <rect x="55" y="13" width="12" height="12" fill="#7c3aed" rx="1"/>
+            <rect x="8" y="50" width="22" height="22" fill="none" stroke="#7c3aed" stroke-width="3" rx="2"/>
+            <rect x="13" y="55" width="12" height="12" fill="#7c3aed" rx="1"/>
+            <rect x="36" y="8" width="4" height="4" fill="#7c3aed"/>
+          </svg>
+        </div>
+      </div>
     </aside>
 
     <main class="main">
       <div class="loader-bar" id="loader-bar"></div>
 
-      <div class="page-header">
-        <div>
-          <div class="page-title">📋 Ежедневный отчёт · LIVE</div>
-          <div class="page-subtitle">Реальные данные из Google Sheets · Продажи_Заголовки</div>
+      <header class="header">
+        <div class="header__filters">
+          <h2 style="font-size:20px;font-weight:700;margin-right:8px">📋 Ежедневный отчёт</h2>
+          <span class="nav-badge--live"><span class="live-dot"></span>LIVE</span>
         </div>
-        <div class="controls">
+        <div class="header__actions">
           <div class="view-toggle" id="view-toggle">
             <button class="active" data-view="daily">📅 День</button>
             <button data-view="month">🗓 Июль</button>
           </div>
-          <label class="date-picker" id="date-picker-wrap">
+          <label class="header__filter" id="date-picker-wrap">
             📅 Дата:
             <input type="date" id="report-date" />
           </label>
-          <label class="month-picker" id="month-picker-wrap" style="display:none">
+          <label class="header__filter" id="month-picker-wrap" style="display:none">
             🗓 Месяц:
             <input type="month" id="report-month" />
           </label>
         </div>
-      </div>
+      </header>
 
-      <div id="error-banner-host"></div>
+      <div class="content">
+        <div id="error-banner-host"></div>
 
-      <div class="summary-row">
-        <div class="card summary-card--reported">
-          <div class="summary-card__label">✅ Отчитались</div>
-          <div class="summary-card__value" id="reported-count">—</div>
-          <div class="summary-card__delta" id="reported-delta">загрузка…</div>
-        </div>
-        <div class="card summary-card--pending">
-          <div class="summary-card__label">⏳ Не отчитались</div>
-          <div class="summary-card__value" id="pending-count">—</div>
-          <div class="summary-card__delta" id="pending-delta">ждём данных…</div>
-        </div>
-        <div class="card summary-card--missing">
-          <div class="summary-card__label">🔴 Под риском</div>
-          <div class="summary-card__value" id="missing-count">—</div>
-          <div class="summary-card__delta">нет отчёта 3+ дня</div>
-        </div>
-        <div class="card">
-          <div class="summary-card__label">📈 Всего за июль</div>
-          <div class="summary-card__value" id="month-total">—</div>
-          <div class="summary-card__delta">отчётов в системе</div>
-        </div>
-      </div>
-
-      <div class="progress-section">
-        <div class="progress-header">
-          <div class="progress-title">Прогресс дня</div>
-          <div class="progress-percent" id="progress-percent">—</div>
-        </div>
-        <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
-        <div class="progress-meta">
-          <span>Обновлено: <span id="last-update">—</span></span>
-          <span id="progress-detail">загрузка…</span>
-        </div>
-      </div>
-
-      <!-- DAILY VIEW -->
-      <div id="view-daily">
-        <div class="reports-row">
-          <div class="card report-table">
-            <div class="report-table__header">
-              <div class="report-table__title">
-                ✅ Отчитались <span class="reported-badge" id="reported-badge">—</span>
-              </div>
-              <span style="font-size:11px;color:var(--text-muted)">live из Google Sheets</span>
+        <div class="kpi-row">
+          <div class="card kpi-card">
+            <div class="kpi-card__header">
+              <div class="kpi-card__icon" style="background:rgba(16,185,129,0.15)">✅</div>
+              <span class="kpi-card__change change--up" id="reported-delta">загрузка…</span>
             </div>
-            <table>
-              <thead><tr><th>Менеджер</th><th>Город</th><th style="text-align:right">Сумма</th><th>Когда</th></tr></thead>
-              <tbody id="reported-tbody"></tbody>
-            </table>
+            <div class="kpi-card__value" id="reported-count">—</div>
+            <div class="kpi-card__title">Отчитались</div>
           </div>
-          <div class="card report-table">
-            <div class="report-table__header">
-              <div class="report-table__title">
-                ⏳ Не отчитались <span class="pending-badge" id="pending-badge">—</span>
-              </div>
-              <span style="font-size:11px;color:var(--text-muted)">отсортированы по severity</span>
+          <div class="card kpi-card">
+            <div class="kpi-card__header">
+              <div class="kpi-card__icon" style="background:rgba(245,158,11,0.15)">⏳</div>
+              <span class="kpi-card__change change--down" id="pending-delta">ждём…</span>
             </div>
-            <table>
-              <thead><tr><th>Менеджер</th><th>Посл. отчёт</th><th>Статус</th></tr></thead>
-              <tbody id="pending-tbody"></tbody>
-            </table>
+            <div class="kpi-card__value" id="pending-count">—</div>
+            <div class="kpi-card__title">Не отчитались</div>
+          </div>
+          <div class="card kpi-card">
+            <div class="kpi-card__header">
+              <div class="kpi-card__icon" style="background:rgba(239,68,68,0.15)">🔴</div>
+              <span class="kpi-card__change change--down">3+ дня</span>
+            </div>
+            <div class="kpi-card__value" id="missing-count">—</div>
+            <div class="kpi-card__title">Под риском</div>
+          </div>
+          <div class="card kpi-card">
+            <div class="kpi-card__header">
+              <div class="kpi-card__icon" style="background:rgba(124,58,237,0.15)">📈</div>
+              <span class="kpi-card__change change--up" id="month-revenue-delta">₽</span>
+            </div>
+            <div class="kpi-card__value" id="month-revenue">—</div>
+            <div class="kpi-card__title">Выручка за июль</div>
           </div>
         </div>
-      </div>
 
-      <!-- MONTH VIEW -->
-      <div id="view-month" style="display:none">
-        <div class="card" style="padding: 20px;">
-          <div class="report-table__header" style="border-bottom: 1px solid var(--border);">
-            <div class="report-table__title">🗓 Июль 2026 — heatmap по дням</div>
-            <span style="font-size:11px;color:var(--text-muted)">кликни по ячейке чтобы drill в этот день</span>
+        <div class="card progress-section" style="margin-bottom:16px">
+          <div class="progress-header">
+            <div class="progress-title">Прогресс дня</div>
+            <div class="progress-percent" id="progress-percent">—</div>
           </div>
-          <div id="heatmap-host" class="heatmap-wrap"></div>
+          <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+          <div class="progress-meta">
+            <span>Обновлено: <span id="last-update">—</span></span>
+            <span id="progress-detail">загрузка…</span>
+          </div>
         </div>
-      </div>
 
-      <div class="actions-row">
-        <button class="action-btn action-btn--primary" onclick="notifyRop()">
-          📤 Напомнить всем неотчитавшимся
-        </button>
-        <button class="action-btn" onclick="exportCSV()">
-          📥 Экспорт в CSV
-        </button>
-        <button class="action-btn" onclick="refreshData()">
-          🔄 Обновить
-        </button>
+        <!-- DAILY VIEW -->
+        <div id="view-daily">
+          <div class="reports-row">
+            <div class="card report-table">
+              <div class="report-table__header">
+                <div class="report-table__title">
+                  ✅ Отчитались <span class="reported-badge" id="reported-badge">—</span>
+                </div>
+                <span style="font-size:11px;color:var(--text-secondary)">live из Google Sheets</span>
+              </div>
+              <table>
+                <thead><tr><th>Менеджер</th><th>Город</th><th style="text-align:right">Сумма</th><th>Когда</th></tr></thead>
+                <tbody id="reported-tbody"></tbody>
+              </table>
+            </div>
+            <div class="card report-table">
+              <div class="report-table__header">
+                <div class="report-table__title">
+                  ⏳ Не отчитались <span class="pending-badge" id="pending-badge">—</span>
+                </div>
+                <span style="font-size:11px;color:var(--text-secondary)">отсортированы по severity</span>
+              </div>
+              <table>
+                <thead><tr><th>Менеджер</th><th>Посл. отчёт</th><th>Статус</th></tr></thead>
+                <tbody id="pending-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- MONTH VIEW -->
+        <div id="view-month" style="display:none">
+          <div class="card" style="padding:20px;margin-bottom:16px">
+            <div class="report-table__header" style="border-bottom:1px solid var(--border-color)">
+              <div class="report-table__title">🗓 Июль 2026 — heatmap по дням</div>
+              <span style="font-size:11px;color:var(--text-secondary)">кликни по ячейке чтобы drill в этот день</span>
+            </div>
+            <div id="heatmap-host" class="heatmap-wrap"></div>
+          </div>
+        </div>
+
+        <div class="actions-row">
+          <button class="action-btn action-btn--primary" onclick="notifyRop()">
+            📤 Напомнить неотчитавшимся
+          </button>
+          <button class="action-btn" onclick="exportCSV()">
+            📥 Экспорт в CSV
+          </button>
+          <button class="action-btn" onclick="refreshData()">
+            🔄 Обновить
+          </button>
+        </div>
       </div>
     </main>
   </div>
 
   <script>
   /* ============================================================
-     LIVE: Google Sheets via public CSV export endpoint
-     Sheet: Продажи_Заголовки (gid=0) · ID: 17Sw8CIV1CUlmbSkdyKH4Kc7s8Bk7uJGhTIXOxd9AzUk
-     Note: gviz/tq returns only 1 row on this sheet (Google rate-limits
-     the JSON endpoint). The /export?format=csv endpoint returns the full
-     ~600 rows reliably.
+     LIVE: Google Sheets via /export?format=csv
+     Sheet: Продажи_Заголовки (gid=0)
      ============================================================ */
   const SPREADSHEET_ID = '17Sw8CIV1CUlmbSkdyKH4Kc7s8Bk7uJGhTIXOxd9AzUk';
-  const SHEET_GID = 0;  // gid of Продажи_Заголовки (first sheet)
+  const SHEET_GID = 0;
   const CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
   const FETCH_TIMEOUT_MS = 15000;
   const EXPECTED_HEADERS = ['Дата и время', 'Номер терминала', 'Менеджер'];
 
-  // ============================================================
-  // MASTER MANAGER LIST (authoritative — from ref.json)
-  // Fallback: derived from data if this is empty
-  // ============================================================
-  // Synced from VPS /opt/impulse-bot/ref.json (25 managers as of 2026-07-29)
+  // Master roster (synced from VPS /opt/impulse-bot/ref.json)
   const MASTER_MANAGERS = [
     'Аксененко Е.', 'Алейников В.', 'Битнерова С.', 'Богданчикова М.',
     'Гаранина Н.', 'Гнездилова Е.', 'Гузеева Н.', 'Дадилова И.',
@@ -493,7 +429,6 @@
     'Шпетная А.'
   ];
 
-  // Hash-based colors for manager avatars (deterministic from name)
   const PALETTE = ['#7c3aed', '#2563eb', '#10b981', '#f59e0b', '#ef4444',
                    '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316',
                    '#a855f7', '#14b8a6', '#f43f5e', '#3b82f6', '#a3e635',
@@ -507,42 +442,21 @@
     return name.trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || '?';
   }
 
-  // ============================================================
-  // XSS guard
-  // ============================================================
   function esc(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
-  // ============================================================
-  // STATE
-  // ============================================================
   const state = {
-    rawRows: [],
-    byDate: {},
-    allManagers: [],
-    managerStats: {},
-    julyTotal: 0,
-    loaded: false,
-    loadError: null,
-    currentDate: null,
-    currentMonth: null,
-    currentView: 'daily',
+    rawRows: [], byDate: {}, allManagers: [], managerStats: {},
+    julyTotal: 0, julyRevenue: 0, loaded: false, loadError: null,
+    currentDate: null, currentMonth: null, currentView: 'daily',
+    ghostManagers: [],
   };
 
-  // ============================================================
-  // PARSING
-  // ============================================================
   function parseCSV(text) {
-    // Standard CSV parser: handles quoted fields, escaped quotes (""), CRLF/LF endings.
-    // Trailing empty rows (just ['']) are skipped so we don't count blank lines.
-    const rows = [];
-    let row = [];
-    let cell = '';
-    let inQuotes = false;
-
+    const rows = []; let row = []; let cell = ''; let inQuotes = false;
     for (let i = 0; i < text.length; i++) {
       const ch = text[i];
       if (inQuotes) {
@@ -566,94 +480,62 @@
     }
     return rows;
   }
-
   function assertCSVSchema(rows) {
     const header = rows[0] || [];
     for (let i = 0; i < EXPECTED_HEADERS.length; i++) {
       if (header[i] !== EXPECTED_HEADERS[i]) {
-        throw new Error(`Schema drift: column ${i} is "${header[i]}", expected "${EXPECTED_HEADERS[i]}". Headers may have shifted.`);
+        throw new Error(`Schema drift: column ${i} is "${header[i]}", expected "${EXPECTED_HEADERS[i]}".`);
       }
     }
     return true;
   }
-
   function normalizeRow(cells) {
-    // CSV cells are plain strings (no {v: ...} wrapper).
-    // Cols A=datetime, B=terminal#, C=manager, D=channel, E=city, F=terminal(point),
-    // G=cash, H=cashless, I=credit, J=encashment, K=total, L=receipt, M=bizTrip, N=comment, O=txid.
-    // Sheet has 29 cols total — we read only first 15.
     const get = (i) => (cells[i] != null && cells[i] !== undefined) ? String(cells[i]) : '';
     let dtRaw = get(0);
     if (dtRaw.startsWith("'")) dtRaw = dtRaw.slice(1);
-
-    // Convert dd.MM.yyyy (European) to ISO YYYY-MM-DD.
     let isoDate = '';
     const m = /^(\d{2})\.(\d{2})\.(\d{4})/.exec(dtRaw);
     if (m) isoDate = `${m[3]}-${m[2]}-${m[1]}`;
-
-    // Col K (idx 10) = Итого выручка (numeric). Col L (idx 11) = Фото чека URL (text).
     const amountRaw = (get(10) || '0').replace(',', '.');
     return {
-      datetime: dtRaw,
-      dateISO: isoDate,
-      manager: get(2).trim(),
-      city: get(4).trim(),
-      channel: get(3).trim(),
-      terminal: get(5).trim(),
-      amount: parseFloat(amountRaw) || 0,
-      txid: get(14),
+      datetime: dtRaw, dateISO: isoDate,
+      manager: get(2).trim(), city: get(4).trim(),
+      channel: get(3).trim(), terminal: get(5).trim(),
+      amount: parseFloat(amountRaw) || 0, txid: get(14),
     };
   }
-
   function buildIndex(rows) {
-    const byDate = {};
-    const managersSet = new Set();
-    const managerStats = {};
-    let julyTotal = 0;
-
+    const byDate = {}; const managersSet = new Set(); const managerStats = {};
+    let julyTotal = 0; let julyRevenue = 0;
     for (const r of rows) {
       if (!r.manager || !r.dateISO) continue;
-
-      // Only July 2026 (per user request — Phase 1 scope)
       if (!r.dateISO.startsWith('2026-07-')) continue;
-
       (byDate[r.dateISO] ||= []).push(r);
       managersSet.add(r.manager);
-      julyTotal += 1;
-
+      julyTotal += 1; julyRevenue += r.amount;
       const s = managerStats[r.manager] ||= { totalReports: 0, lastReportDate: null, perDayCount: {}, totalAmount: 0 };
-      s.totalReports += 1;
-      s.totalAmount += r.amount;
+      s.totalReports += 1; s.totalAmount += r.amount;
       s.perDayCount[r.dateISO] = (s.perDayCount[r.dateISO] || 0) + 1;
       if (!s.lastReportDate || r.datetime > s.lastReportDate) s.lastReportDate = r.datetime;
     }
-
-    // Authoritative manager list = MASTER_MANAGERS (from ref.json).
-    // Managers seen in data but not in MASTER_MANAGERS are surfaced for awareness ("гость").
     const allManagers = MASTER_MANAGERS.slice().sort((a, b) => a.localeCompare(b, 'ru'));
     const ghostManagers = Array.from(managersSet).filter(m => !MASTER_MANAGERS.includes(m)).sort();
-    return { byDate, allManagers, managerStats, julyTotal, ghostManagers };
+    return { byDate, allManagers, managerStats, julyTotal, julyRevenue, ghostManagers };
   }
 
-  // ============================================================
-  // FETCH — with timeout + sticky error state
-  // ============================================================
   async function fetchGoogleSheets() {
     const loader = document.getElementById('loader-bar');
     loader.classList.add('active');
     state.loadError = null;
-
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
     try {
       const r = await fetch(CSV_URL, { cache: 'no-store', signal: controller.signal });
       if (!r.ok) throw new Error(`HTTP ${r.status} ${r.statusText}`);
       const text = await r.text();
       const rows = parseCSV(text);
-      if (rows.length < 2) throw new Error(`CSV returned ${rows.length} rows — expected header + ≥1 data row. Sheet may be empty or unreachable.`);
+      if (rows.length < 2) throw new Error(`CSV returned ${rows.length} rows`);
       assertCSVSchema(rows);
-
       const rawRows = [];
       for (let i = 1; i < rows.length; i++) {
         const cells = rows[i];
@@ -661,26 +543,25 @@
         const norm = normalizeRow(cells);
         if (norm.dateISO && norm.manager) rawRows.push(norm);
       }
-
       const idx = buildIndex(rawRows);
       state.rawRows = rawRows;
       state.byDate = idx.byDate;
       state.allManagers = idx.allManagers;
       state.managerStats = idx.managerStats;
       state.julyTotal = idx.julyTotal;
+      state.julyRevenue = idx.julyRevenue;
       state.ghostManagers = idx.ghostManagers;
       state.loaded = true;
-
       document.getElementById('last-update').textContent = 'только что';
+      updateSidebarManagers();
       return true;
     } catch (e) {
       const reason = e.name === 'AbortError' ? `Таймаут ${FETCH_TIMEOUT_MS / 1000} сек` : e.message;
       console.error('fetch error:', reason, e);
       state.loadError = reason;
       renderErrorBanner(reason);
-      // Graceful degradation: empty data + render call still happens
       state.rawRows = []; state.byDate = {}; state.allManagers = MASTER_MANAGERS.slice();
-      state.managerStats = {}; state.julyTotal = 0;
+      state.managerStats = {}; state.julyTotal = 0; state.julyRevenue = 0;
       state.loaded = true;
       return false;
     } finally {
@@ -689,12 +570,17 @@
     }
   }
 
+  function updateSidebarManagers() {
+    const total = state.allManagers.length;
+    const reported = state.byDate[state.currentDate]
+      ? new Set(state.byDate[state.currentDate].map(r => r.manager)).size : 0;
+    const el = document.getElementById('sidebar-mgr-count');
+    if (el) el.textContent = reported + '/' + total;
+  }
+
   function renderErrorBanner(reason) {
     const host = document.getElementById('error-banner-host');
-    if (!reason) {
-      host.innerHTML = '';
-      return;
-    }
+    if (!reason) { host.innerHTML = ''; return; }
     host.innerHTML = `
       <div class="error-banner">
         <span class="error-banner__icon">⚠️</span>
@@ -706,35 +592,29 @@
       </div>`;
   }
 
-  // ============================================================
-  // RENDER (daily view)
-  // ============================================================
   function renderDaily() {
     if (state.loadError) renderErrorBanner(state.loadError);
     else renderErrorBanner(null);
 
     const dateIso = state.currentDate || new Date().toISOString().slice(0, 10);
     const dayRows = state.byDate[dateIso] || [];
-
     const reportedSet = new Set();
     const reportedData = {};
     for (const r of dayRows) {
       reportedSet.add(r.manager);
-      if (!reportedData[r.manager] || r.datetime > reportedData[r.manager].datetime) {
-        reportedData[r.manager] = r;
-      }
+      if (!reportedData[r.manager] || r.datetime > reportedData[r.manager].datetime) reportedData[r.manager] = r;
     }
-
     const pending = state.allManagers.filter(m => !reportedSet.has(m));
-
     const totalManagers = state.allManagers.length;
+
     document.getElementById('reported-count').textContent = String(reportedSet.size);
     document.getElementById('reported-badge').textContent = String(reportedSet.size);
-    document.getElementById('reported-delta').textContent = 'из ' + totalManagers + ' менеджеров';
+    document.getElementById('reported-delta').textContent = 'из ' + totalManagers + ' мен.';
     document.getElementById('pending-count').textContent = String(pending.length);
     document.getElementById('pending-badge').textContent = String(pending.length);
-    document.getElementById('pending-delta').textContent = pending.length ? 'нужно напомнить' : 'все отчитались ✓';
-    document.getElementById('month-total').textContent = String(state.julyTotal);
+    document.getElementById('pending-delta').textContent = pending.length ? 'нужно напомнить' : 'все ✓';
+    document.getElementById('month-revenue').textContent = state.julyRevenue.toLocaleString('ru-RU') + ' ₽';
+    document.getElementById('month-revenue-delta').textContent = state.julyTotal + ' отчётов';
 
     const today = new Date(dateIso + 'T00:00:00');
     let critical = 0;
@@ -747,9 +627,7 @@
     }
     document.getElementById('missing-count').textContent = String(critical);
 
-    const pct = totalManagers
-      ? Math.round((reportedSet.size / totalManagers) * 100)
-      : 0;
+    const pct = totalManagers ? Math.round((reportedSet.size / totalManagers) * 100) : 0;
     document.getElementById('progress-percent').textContent = pct + '%';
     document.getElementById('progress-fill').style.width = pct + '%';
     document.getElementById('progress-detail').textContent =
@@ -763,7 +641,6 @@
           const s = state.managerStats[m];
           const time = r && r.datetime ? r.datetime.slice(11, 16) : '—';
           const count = (s && s.perDayCount[dateIso]) || 1;
-          // FIX: explicit grouping prevents operator-precedence bug from previous version
           const extra = count > 1 ? ' <span style="color:var(--accent-purple);font-weight:600">(+' + (count - 1) + ' зап.)</span>' : '';
           return `
             <tr>
@@ -782,35 +659,19 @@
     document.getElementById('pending-tbody').innerHTML = pending.length === 0
       ? '<tr><td colspan="3" class="empty-state" style="color:var(--accent-green)">🎉 Все ' + totalManagers + ' менеджеров отчитались!</td></tr>'
       : pending.sort((a, b) => {
-          const sa = state.managerStats[a];
-          const sb = state.managerStats[b];
-          if (!sa && !sb) return 0;
-          if (!sa) return 1;
-          if (!sb) return -1;
+          const sa = state.managerStats[a]; const sb = state.managerStats[b];
+          if (!sa && !sb) return 0; if (!sa) return 1; if (!sb) return -1;
           return sa.lastReportDate.localeCompare(sb.lastReportDate);
         }).map(m => {
           const s = state.managerStats[m];
           let severity, statusText, dotClass;
-          if (!s || !s.lastReportDate) {
-            severity = 'severity-info';
-            statusText = '⚪ Нет данных';
-            dotClass = 'status-dot--info';
-          } else {
+          if (!s || !s.lastReportDate) { severity = 'severity-info'; statusText = '⚪ Нет данных'; dotClass = 'status-dot--info'; }
+          else {
             const last = new Date(s.lastReportDate.slice(0, 10) + 'T00:00:00');
             const daysAgo = Math.floor((today - last) / 86400000);
-            if (daysAgo >= 3) {
-              severity = 'severity-critical';
-              statusText = '🔴 ' + daysAgo + ' дн. без отчёта';
-              dotClass = 'status-dot--critical';
-            } else if (daysAgo >= 1) {
-              severity = 'severity-warning';
-              statusText = '🟡 Вчера не было';
-              dotClass = 'status-dot--warning';
-            } else {
-              severity = 'severity-info';
-              statusText = '⚪ Сегодня ещё нет';
-              dotClass = 'status-dot--info';
-            }
+            if (daysAgo >= 3) { severity = 'severity-critical'; statusText = '🔴 ' + daysAgo + ' дн. без отчёта'; dotClass = 'status-dot--critical'; }
+            else if (daysAgo >= 1) { severity = 'severity-warning'; statusText = '🟡 Вчера не было'; dotClass = 'status-dot--warning'; }
+            else { severity = 'severity-info'; statusText = '⚪ Сегодня ещё нет'; dotClass = 'status-dot--info'; }
           }
           const lastReport = s && s.lastReportDate ? formatDateHuman(s.lastReportDate.slice(0, 10)) : 'никогда';
           return `
@@ -827,22 +688,16 @@
         }).join('');
   }
 
-  // ============================================================
-  // RENDER (monthly heatmap)
-  // ============================================================
   function renderMonth() {
     const month = state.currentMonth || '2026-07';
     const [year, monthNum] = month.split('-').map(Number);
     const daysInMonth = new Date(year, monthNum, 0).getDate();
     const host = document.getElementById('heatmap-host');
     const totalManagers = state.allManagers.length;
-    if (!totalManagers) {
-      host.innerHTML = '<div class="empty-state">📭 Справочник менеджеров пуст</div>';
-      return;
-    }
+    if (!totalManagers) { host.innerHTML = '<div class="empty-state">📭 Справочник менеджеров пуст</div>'; return; }
 
     let html = '<div class="heatmap">';
-    html += '<div class="heatmap__cell heatmap__cell--head"></div>';
+    html += '<div class="heatmap__cell heatmap__cell--name" style="font-weight:600;color:var(--text-secondary)">Менеджер</div>';
     for (let d = 1; d <= daysInMonth; d++) {
       const wd = new Date(year, monthNum - 1, d).getDay();
       const isWeekend = wd === 0 || wd === 6;
@@ -853,7 +708,7 @@
       html += `<div class="heatmap__cell heatmap__cell--name">
         <span class="avatar avatar--sm" style="background:${esc(colorFor(m))}">${esc(initials(m))}</span>
         <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m)}</span>
-        <span style="margin-left:auto;color:var(--text-muted);font-size:11px">${s.totalReports || 0}</span>
+        <span style="margin-left:auto;color:var(--text-secondary);font-size:11px">${s.totalReports || 0}</span>
       </div>`;
       for (let d = 1; d <= daysInMonth; d++) {
         const iso = `${year}-${String(monthNum).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -865,16 +720,8 @@
         let title = iso + ': нет отчёта';
         let content = '';
         const clickable = !isWeekend && !isFuture;
-        if (hasReport) {
-          cls += ' heatmap__cell--reported';
-          title = iso + ': отчёт ✓';
-          content = '✓';
-        } else if (isWeekend || isFuture) {
-          cls += ' heatmap__cell--weekend';
-          title = iso + (isWeekend ? ': выходной' : ': будущая дата');
-          content = '·';
-        }
-        const cursorStyle = clickable ? 'cursor:pointer' : 'cursor:default';
+        if (hasReport) { cls += ' heatmap__cell--reported'; title = iso + ': отчёт ✓'; content = '✓'; }
+        else if (isWeekend || isFuture) { cls += ' heatmap__cell--weekend'; title = iso + (isWeekend ? ': выходной' : ': будущее'); content = '·'; }
         const onclick = clickable ? ` onclick="clickHeatmapCell('${esc(iso)}')"` : '';
         html += `<div class="${esc(cls)}" title="${esc(title)}"${onclick} style="cursor:${clickable ? 'pointer' : 'default'}">${content}</div>`;
       }
@@ -882,10 +729,9 @@
     html += '</div>';
 
     if (state.ghostManagers && state.ghostManagers.length) {
-      html += `<div style="margin-top:16px;padding:12px;background:rgba(245,158,11,0.08);border:1px solid var(--accent-yellow);border-radius:var(--radius-md);font-size:12px;color:var(--text-secondary)">
+      html += `<div style="margin-top:16px;padding:12px;background:rgba(245,158,11,0.08);border:1px solid var(--accent-yellow);border-radius:10px;font-size:12px;color:var(--text-secondary)">
         ⚠️ В данных за июль найдены ${state.ghostManagers.length} менеджер${state.ghostManagers.length === 1 ? '' : 'ов'}, которых нет в справочнике:
         <strong style="color:var(--accent-yellow)">${esc(state.ghostManagers.join(', '))}</strong>
-        — добавь их через <code>/admin</code> в Telegram-боте.
       </div>`;
     }
     host.innerHTML = html;
@@ -907,22 +753,14 @@
     document.getElementById('view-month').style.display = view === 'month' ? '' : 'none';
     document.getElementById('date-picker-wrap').style.display = view === 'daily' ? '' : 'none';
     document.getElementById('month-picker-wrap').style.display = view === 'month' ? '' : 'none';
-    if (view === 'daily') renderDaily();
-    else renderMonth();
+    if (view === 'daily') renderDaily(); else renderMonth();
   }
 
-  // ============================================================
-  // Formatting
-  // ============================================================
-  function formatRub(v) {
-    return Math.round(v).toLocaleString('ru-RU') + ' ₽';
-  }
+  function formatRub(v) { return Math.round(v).toLocaleString('ru-RU') + ' ₽'; }
   function formatDateHuman(iso) {
     if (!iso) return '';
-    try {
-      const d = new Date(iso + 'T00:00:00');
-      return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
-    } catch { return iso; }
+    try { return new Date(iso + 'T00:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' }); }
+    catch { return iso; }
   }
 
   function showToast(msg, isError = false) {
@@ -935,20 +773,13 @@
     setTimeout(() => t.remove(), 4500);
   }
 
-  // ============================================================
-  // Action stubs (real impl needs Telegram bot integration)
-  // ============================================================
   async function notifyRop() {
     const dateIso = state.currentDate || new Date().toISOString().slice(0, 10);
     const dayRows = state.byDate[dateIso] || [];
     const reportedSet = new Set(dayRows.map(r => r.manager));
     const pending = state.allManagers.filter(m => !reportedSet.has(m));
-    if (pending.length === 0) {
-      showToast('🎉 Отлично! Все ' + state.allManagers.length + ' менеджеров уже отчитались за ' + dateIso);
-      return;
-    }
-    // TODO Phase 2: send via Telegram Bot API to each pending manager's chat_id
-    showToast('📤 Уведомление будет отправлено ' + pending.length + ' менеджерам (фаза 2: интеграция с Telegram Bot API)');
+    if (pending.length === 0) { showToast('🎉 Все ' + state.allManagers.length + ' менеджеров уже отчитались!'); return; }
+    showToast('📤 Уведомление будет отправлено ' + pending.length + ' менеджерам (фаза 2: интеграция с Telegram)');
   }
 
   function exportCSV() {
@@ -967,20 +798,13 @@
 
   async function refreshData() {
     state.loaded = false;
-    // FIX: skeleton colspan matches actual table column count
     document.getElementById('reported-tbody').innerHTML = '<tr><td colspan="4" class="skeleton" style="height:60px">&nbsp;</td></tr>';
     document.getElementById('pending-tbody').innerHTML = '<tr><td colspan="3" class="skeleton" style="height:60px">&nbsp;</td></tr>';
     await fetchGoogleSheets();
-    if (state.currentView === 'month') renderMonth();
-    else renderDaily();
-    if (!state.loadError) {
-      showToast('🔄 Данные обновлены (' + state.julyTotal + ' записей в июле)');
-    }
+    if (state.currentView === 'month') renderMonth(); else renderDaily();
+    if (!state.loadError) showToast('🔄 Данные обновлены (' + state.julyTotal + ' записей в июле)');
   }
 
-  // ============================================================
-  // INIT
-  // ============================================================
   function init() {
     const today = new Date();
     state.currentDate = today.toISOString().slice(0, 10);
@@ -988,7 +812,6 @@
     state.currentView = 'daily';
     document.getElementById('report-date').value = state.currentDate;
     document.getElementById('report-month').value = state.currentMonth;
-
     document.getElementById('report-date').addEventListener('change', (e) => {
       state.currentDate = e.target.value;
       if (state.loaded) renderDaily();
@@ -1000,7 +823,6 @@
     document.querySelectorAll('#view-toggle button').forEach(btn => {
       btn.addEventListener('click', () => switchView(btn.dataset.view));
     });
-
     refreshData();
   }
 
