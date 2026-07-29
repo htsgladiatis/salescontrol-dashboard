@@ -454,6 +454,18 @@
     julyTotal: 0, julyRevenue: 0, loaded: false, loadError: null,
     currentDate: null, currentMonth: null, currentView: 'daily',
     ghostManagers: [],
+    // === Auto-refresh state ===
+    seenTxids: new Set(),
+    seenTxidsCap: 5000,         // FIFO eviction beyond this size
+    seenTxidsOrder: [],         // parallel array for FIFO
+    lastFetchTs: 0,
+    lastFetchOk: true,
+    currentInterval: 30000,
+    autoRefreshTimer: null,
+    isFetching: false,
+    firstLoadDone: false,
+    lastNewRecordToastTs: 0,
+    NEW_TOAST_MIN_INTERVAL_MS: 30000,
   };
 
   function parseCSV(text) {
@@ -530,9 +542,16 @@
     return { byDate, allManagers, managerStats, julyTotal, julyRevenue, ghostManagers };
   }
 
-  async function fetchGoogleSheets() {
+  async function fetchGoogleSheets(isBackground = false) {
+    // Re-entrancy guard: skip if a fetch is already in flight (prevents parallel fetches)
+    if (state.isFetching) {
+      console.log('[fetch] skip: another fetch in progress');
+      return state.loaded;
+    }
+    state.isFetching = true;
     const loader = document.getElementById('loader-bar');
-    loader.classList.add('active');
+    // Skip loader-bar animation on background polls (don't disrupt UX)
+    if (!isBackground) loader.classList.add('active');
     state.loadError = null;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -551,6 +570,7 @@
         if (norm.dateISO && norm.manager) rawRows.push(norm);
       }
       const idx = buildIndex(rawRows);
+      const prevTotal = state.rawRows.length;
       state.rawRows = rawRows;
       state.byDate = idx.byDate;
       state.allManagers = idx.allManagers;
@@ -559,21 +579,54 @@
       state.julyRevenue = idx.julyRevenue;
       state.ghostManagers = idx.ghostManagers;
       state.loaded = true;
-      document.getElementById('last-update').textContent = 'только что';
+
+      // === NEW-RECORD DETECTION (with explicit first-load guard + FIFO cap) ===
+      let newCount = 0;
+      for (const r of rawRows) {
+        if (r.txid && !state.seenTxids.has(r.txid)) {
+          // Only count "new" AFTER first load completed (avoids 287-toast on init)
+          if (state.firstLoadDone && isBackground) newCount++;
+          // Add to set + LRU order
+          state.seenTxids.add(r.txid);
+          state.seenTxidsOrder.push(r.txid);
+          // FIFO eviction if cap exceeded
+          while (state.seenTxidsOrder.length > state.seenTxidsCap) {
+            const evicted = state.seenTxidsOrder.shift();
+            state.seenTxids.delete(evicted);
+          }
+        }
+      }
+      // Anti-flood guard: only toast once per N seconds (still increments counter)
+      if (newCount > 0 && isBackground) {
+        if (Date.now() - state.lastNewRecordToastTs > state.NEW_TOAST_MIN_INTERVAL_MS) {
+          showNewRecordsToast(newCount);
+          state.lastNewRecordToastTs = Date.now();
+        }
+      }
+
+      // === FRESHNESS TRACKING ===
+      state.lastFetchTs = Date.now();
+      state.lastFetchOk = true;
+      state.firstLoadDone = true;
+      updateRelativeTime();
       updateSidebarManagers();
       return true;
     } catch (e) {
       const reason = e.name === 'AbortError' ? `Таймаут ${FETCH_TIMEOUT_MS / 1000} сек` : e.message;
       console.error('fetch error:', reason, e);
       state.loadError = reason;
-      renderErrorBanner(reason);
-      state.rawRows = []; state.byDate = {}; state.allManagers = MASTER_MANAGERS.slice();
-      state.managerStats = {}; state.julyTotal = 0; state.julyRevenue = 0;
+      if (!isBackground) renderErrorBanner(reason);
+      // Optimistic graceful degradation on background polls: keep last good data visible
       state.loaded = true;
+      state.lastFetchOk = false;
+      // Exponential backoff for next poll
+      state.currentInterval = Math.min(state.currentInterval * 2, 300000);
+      state.isFetching = false;
       return false;
     } finally {
       clearTimeout(timeoutId);
       loader.classList.remove('active');
+      state.isFetching = false;
     }
   }
 
@@ -803,13 +856,69 @@
     showToast('📥 CSV скачан (' + rows.length + ' строк)');
   }
 
-  async function refreshData() {
-    state.loaded = false;
-    document.getElementById('reported-tbody').innerHTML = '<tr><td colspan="4" class="skeleton" style="height:60px">&nbsp;</td></tr>';
-    document.getElementById('pending-tbody').innerHTML = '<tr><td colspan="3" class="skeleton" style="height:60px">&nbsp;</td></tr>';
-    await fetchGoogleSheets();
+  async function refreshData(isBackground = false) {
+    if (!isBackground) {
+      state.loaded = false;
+      document.getElementById('reported-tbody').innerHTML = '<tr><td colspan="4" class="skeleton" style="height:60px">&nbsp;</td></tr>';
+      document.getElementById('pending-tbody').innerHTML = '<tr><td colspan="3" class="skeleton" style="height:60px">&nbsp;</td></tr>';
+    }
+    await fetchGoogleSheets(isBackground);
     if (state.currentView === 'month') renderMonth(); else renderDaily();
-    if (!state.loadError) showToast('🔄 Данные обновлены (' + state.julyTotal + ' записей в июле)');
+    if (!state.loadError && !isBackground) showToast('🔄 Данные обновлены (' + state.julyTotal + ' записей в июле)');
+  }
+
+  // === AUTO-REFRESH ===
+
+  /**
+   * Self-rescheduling background poller. Uses setTimeout (not setInterval) so we
+   * can dynamically adjust the interval after backoff / success.
+   */
+  function startAutoRefresh() {
+    if (state.autoRefreshTimer) clearTimeout(state.autoRefreshTimer);
+    state.autoRefreshTimer = setTimeout(async () => {
+      // Pause polling when tab is hidden (save Sheets quota + battery)
+      if (document.visibilityState === 'visible') {
+        const intervalAtStart = state.currentInterval;
+        await refreshData(true);  // background refresh, no skeleton/loader
+        // Reset interval on success, keep backoff on failure
+        if (state.lastFetchOk && state.currentInterval > 30000) {
+          state.currentInterval = 30000;
+        }
+      }
+      startAutoRefresh();
+    }, state.currentInterval);
+  }
+
+  /**
+   * Update the "Обновлено: X назад" text every 10s. Pulse red if > 5 min stale.
+   */
+  function updateRelativeTime() {
+    if (!state.lastFetchTs) return;
+    const secs = Math.floor((Date.now() - state.lastFetchTs) / 1000);
+    const el = document.getElementById('last-update');
+    if (!el) return;
+    let label;
+    if (secs < 5) label = 'только что';
+    else if (secs < 60) label = `${secs} сек назад`;
+    else label = `${Math.floor(secs / 60)} мин назад`;
+    el.textContent = label;
+    el.style.color = secs > 300
+      ? 'var(--accent-red)'
+      : (state.lastFetchOk ? '' : 'var(--accent-yellow)');
+  }
+
+  /**
+   * Toast when new rows appeared during background refresh.
+   * Uses correct Russian pluralization: 1='отчёт', 2-4='отчёта', 5+='отчётов'.
+   */
+  function showNewRecordsToast(count) {
+    let noun;
+    const mod10 = count % 10, mod100 = count % 100;
+    if (mod10 === 1 && mod100 !== 11) noun = 'новый отчёт';
+    else if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) noun = 'новых отчёта';
+    else noun = 'новых отчётов';
+    const verb = count === 1 ? 'появился' : 'появились';
+    showToast(`🔔 ${verb} ${count} ${noun}!`);
   }
 
   function init() {
@@ -830,7 +939,31 @@
     document.querySelectorAll('#view-toggle button').forEach(btn => {
       btn.addEventListener('click', () => switchView(btn.dataset.view));
     });
+
+    // === AUTO-REFRESH WIRING ===
+    // Tick the "X назад" text every 10 sec (lightweight). Sentinel-tracked so we
+    // can pause when the tab is hidden and resume when visible.
+    state.relativeTimeTimer = setInterval(updateRelativeTime, 10000);
+
+    // When tab becomes visible again: catch up if > 15s elapsed, start re-tick if paused
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        if (state.lastFetchTs && (Date.now() - state.lastFetchTs > 15000)) {
+          refreshData(true);
+        }
+        if (!state.relativeTimeTimer) {
+          state.relativeTimeTimer = setInterval(updateRelativeTime, 10000);
+        }
+        if (!state.autoRefreshTimer) startAutoRefresh();
+      } else {
+        // Tab hidden: pause cheap timers (save CPU); background polls already skip fetch
+        if (state.relativeTimeTimer) { clearInterval(state.relativeTimeTimer); state.relativeTimeTimer = null; }
+      }
+    });
+
+    // Initial load (full skeleton + loader) then start background polling loop
     refreshData();
+    startAutoRefresh();
   }
 
   init();
