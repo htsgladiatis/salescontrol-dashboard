@@ -35,7 +35,7 @@
       line-height: 1.5;
       min-height: 100vh;
     }
-    .app { min-height: 100vh; background: var(--bg-primary); }
+    .app { display: flex; min-height: 100vh; }
     .sidebar {
       width: 240px; background: var(--bg-secondary);
       border-right: 1px solid var(--border);
@@ -319,77 +319,34 @@
       .summary-row { grid-template-columns: 1fr; }
       .actions-row { flex-direction: column; align-items: stretch; }
     }
-
-    /* Topbar (replaces sidebar for this page) */
-    .topbar {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 32px; background: var(--bg-secondary);
-      border-bottom: 1px solid var(--border);
-      position: sticky; top: 0; z-index: 50;
-      flex-wrap: wrap; gap: 12px;
-    }
-    .topbar__back {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 9px 16px; border-radius: var(--radius-md);
-      background: var(--bg-card); border: 1px solid var(--border);
-      color: var(--text-primary); text-decoration: none;
-      font-size: 14px; font-weight: 500;
-      transition: all 0.15s ease;
-    }
-    .topbar__back:hover {
-      background: var(--bg-elevated);
-      border-color: var(--accent-purple);
-      transform: translateX(-2px);
-    }
-    .back-arrow { font-size: 18px; font-weight: 700; }
-    .topbar__brand {
-      display: flex; align-items: center; gap: 12px;
-      font-size: 15px; font-weight: 700;
-    }
-    .topbar__logo {
-      background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
-      width: 30px; height: 30px; border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
-    }
-    .topbar__live {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 12px; background: rgba(16,185,129,0.15);
-      color: var(--accent-green); border-radius: 999px;
-      font-size: 11px; font-weight: 700; letter-spacing: 0.05em;
-    }
-    .live-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--accent-green);
-      animation: live-pulse 2s ease-in-out infinite;
-    }
-    @keyframes live-pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(1.3); }
-    }
-    @media (max-width: 768px) {
-      .topbar { padding: 12px 16px; }
-      .topbar__title { display: none; }
-      .topbar__live { font-size: 10px; padding: 4px 8px; }
-    }
   </style>
 </head>
 <body>
   <div class="app">
-    <header class="topbar">
-      <a href="index.html" class="topbar__back" title="Вернуться к главному дашборду">
-        <span class="back-arrow">←</span>
-        <span>Назад к дашборду</span>
-      </a>
-      <div class="topbar__brand">
-        <span class="topbar__logo">⚡</span>
-        <span class="topbar__title">SalesControl · Отчёты РОПа</span>
+    <aside class="sidebar">
+      <div class="sidebar__logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">SalesControl</span>
       </div>
-      <div class="topbar__live" title="Данные обновляются из Google Sheets в реальном времени">
-        <span class="live-dot"></span>
-        <span>LIVE</span>
-      </div>
-    </header>
+      <nav class="sidebar__nav">
+        <a class="nav-item" href="#" id="nav-dashboard">
+          <span class="nav-icon">🏠</span><span class="nav-label">Дашборд</span>
+        </a>
+        <a class="nav-item" href="#" id="nav-sales">
+          <span class="nav-icon">📊</span><span class="nav-label">Продажи</span>
+        </a>
+        <a class="nav-item" href="#" id="nav-managers">
+          <span class="nav-icon">👥</span><span class="nav-label">Менеджеры</span>
+        </a>
+        <a class="nav-item nav-item--active" href="#daily-reports" id="nav-reports">
+          <span class="nav-icon">📋</span><span class="nav-label">Отчёты РОПа</span>
+          <span style="margin-left:auto;font-size:10px;background:rgba(124,58,237,0.3);padding:2px 6px;border-radius:4px;color:#c4b5fd;">NEW</span>
+        </a>
+        <a class="nav-item" href="#" id="nav-history">
+          <span class="nav-icon">📈</span><span class="nav-label">История</span>
+        </a>
+      </nav>
+    </aside>
 
     <main class="main">
       <div class="loader-bar" id="loader-bar"></div>
@@ -509,12 +466,15 @@
 
   <script>
   /* ============================================================
-     LIVE: Google Sheets via public gviz/tq endpoint
-     Sheet: Продажи_Заголовки · ID: 17Sw8CIV1CUlmbSkdyKH4Kc7s8Bk7uJGhTIXOxd9AzUk
+     LIVE: Google Sheets via public CSV export endpoint
+     Sheet: Продажи_Заголовки (gid=0) · ID: 17Sw8CIV1CUlmbSkdyKH4Kc7s8Bk7uJGhTIXOxd9AzUk
+     Note: gviz/tq returns only 1 row on this sheet (Google rate-limits
+     the JSON endpoint). The /export?format=csv endpoint returns the full
+     ~600 rows reliably.
      ============================================================ */
   const SPREADSHEET_ID = '17Sw8CIV1CUlmbSkdyKH4Kc7s8Bk7uJGhTIXOxd9AzUk';
-  const SHEET_NAME = 'Продажи_Заголовки';
-  const GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&range=${encodeURIComponent(SHEET_NAME)}!A:O`;
+  const SHEET_GID = 0;  // gid of Продажи_Заголовки (first sheet)
+  const CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
   const FETCH_TIMEOUT_MS = 15000;
   const EXPECTED_HEADERS = ['Дата и время', 'Номер терминала', 'Менеджер'];
 
@@ -575,38 +535,64 @@
   // ============================================================
   // PARSING
   // ============================================================
-  function parseGvizResponse(text) {
-    const start = text.indexOf('{');
-    const end = text.lastIndexOf('}');
-    if (start === -1 || end === -1) throw new Error('Invalid gviz response: no JSON body');
-    return JSON.parse(text.slice(start, end + 1));
+  function parseCSV(text) {
+    // Standard CSV parser: handles quoted fields, escaped quotes (""), CRLF/LF endings.
+    // Trailing empty rows (just ['']) are skipped so we don't count blank lines.
+    const rows = [];
+    let row = [];
+    let cell = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (inQuotes) {
+        if (ch === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+        else if (ch === '"') { inQuotes = false; }
+        else { cell += ch; }
+      } else {
+        if (ch === '"') { inQuotes = true; }
+        else if (ch === ',') { row.push(cell); cell = ''; }
+        else if (ch === '\n') {
+          row.push(cell);
+          if (!(row.length === 1 && row[0] === '')) rows.push(row);
+          row = []; cell = '';
+        }
+        else if (ch !== '\r') { cell += ch; }
+      }
+    }
+    if (cell || row.length) {
+      row.push(cell);
+      if (!(row.length === 1 && row[0] === '')) rows.push(row);
+    }
+    return rows;
   }
 
-  function assertSchema(parsed) {
-    const cols = parsed.table && parsed.table.cols;
-    if (!cols || !Array.isArray(cols)) throw new Error('No column metadata in response');
+  function assertCSVSchema(rows) {
+    const header = rows[0] || [];
     for (let i = 0; i < EXPECTED_HEADERS.length; i++) {
-      if ((cols[i] && cols[i].label) !== EXPECTED_HEADERS[i]) {
-        throw new Error(`Schema drift: column ${i} is "${cols[i] && cols[i].label}", expected "${EXPECTED_HEADERS[i]}". Headers may have shifted.`);
+      if (header[i] !== EXPECTED_HEADERS[i]) {
+        throw new Error(`Schema drift: column ${i} is "${header[i]}", expected "${EXPECTED_HEADERS[i]}". Headers may have shifted.`);
       }
     }
     return true;
   }
 
   function normalizeRow(cells) {
-    // A=datetime, B=terminal#, C=manager, D=channel, E=city, F=terminal(point),
-    // G=cash, H=cashless, I=credit, J=encashment, K=total, L=receipt, M=bizTrip, N=comment, O=txid
-    const get = (i) => (cells[i] && cells[i].v != null) ? String(cells[i].v) : '';
+    // CSV cells are plain strings (no {v: ...} wrapper).
+    // Cols A=datetime, B=terminal#, C=manager, D=channel, E=city, F=terminal(point),
+    // G=cash, H=cashless, I=credit, J=encashment, K=total, L=receipt, M=bizTrip, N=comment, O=txid.
+    // Sheet has 29 cols total — we read only first 15.
+    const get = (i) => (cells[i] != null && cells[i] !== undefined) ? String(cells[i]) : '';
     let dtRaw = get(0);
     if (dtRaw.startsWith("'")) dtRaw = dtRaw.slice(1);
-    const dateISO = dtRaw.slice(0, 10);  // "29.07.2026 09:14:54" → "29.07.2026"
 
-    // gviz format: dd.MM.yyyy (European). Convert to ISO YYYY-MM-DD.
-    let isoDate = dateISO;
-    const m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(dateISO);
+    // Convert dd.MM.yyyy (European) to ISO YYYY-MM-DD.
+    let isoDate = '';
+    const m = /^(\d{2})\.(\d{2})\.(\d{4})/.exec(dtRaw);
     if (m) isoDate = `${m[3]}-${m[2]}-${m[1]}`;
 
-    const amountRaw = (get(11) || '0').replace(',', '.');
+    // Col K (idx 10) = Итого выручка (numeric). Col L (idx 11) = Фото чека URL (text).
+    const amountRaw = (get(10) || '0').replace(',', '.');
     return {
       datetime: dtRaw,
       dateISO: isoDate,
@@ -661,22 +647,16 @@
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
     try {
-      const r = await fetch(GVIZ_URL, { cache: 'no-store', signal: controller.signal });
+      const r = await fetch(CSV_URL, { cache: 'no-store', signal: controller.signal });
       if (!r.ok) throw new Error(`HTTP ${r.status} ${r.statusText}`);
       const text = await r.text();
-      const parsed = parseGvizResponse(text);
-      assertSchema(parsed);
-
-      const dataRows = parsed.table.rows || [];
-      let dataStart = 0;
-      const headerRow = dataRows[0];
-      if (headerRow && headerRow.c && headerRow.c[0] && headerRow.c[0].v === 'Дата и время') {
-        dataStart = 1;
-      }
+      const rows = parseCSV(text);
+      if (rows.length < 2) throw new Error(`CSV returned ${rows.length} rows — expected header + ≥1 data row. Sheet may be empty or unreachable.`);
+      assertCSVSchema(rows);
 
       const rawRows = [];
-      for (let i = dataStart; i < dataRows.length; i++) {
-        const cells = dataRows[i].c || [];
+      for (let i = 1; i < rows.length; i++) {
+        const cells = rows[i];
         if (cells.length === 0) continue;
         const norm = normalizeRow(cells);
         if (norm.dateISO && norm.manager) rawRows.push(norm);
