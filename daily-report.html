@@ -497,7 +497,13 @@
     let isoDate = '';
     const m = /^(\d{2})\.(\d{2})\.(\d{4})/.exec(dtRaw);
     if (m) isoDate = `${m[3]}-${m[2]}-${m[1]}`;
-    const amountRaw = (get(10) || '0').replace(',', '.');
+    // Strip all whitespace (incl. non-breaking spaces \xA0) so RU locale
+    // "46 000,50" / "50 000" / "46,000.50" all parse correctly.
+    // Sheets CSV export applies the spreadsheet's locale formatting to numbers,
+    // which inserts U+00A0 / regular spaces as thousands separators.
+    const amountRaw = (get(10) || '0')
+      .replace(/[\s\xA0]/g, '')
+      .replace(',', '.');
     return {
       datetime: dtRaw, dateISO: isoDate,
       manager: get(2).trim(), city: get(4).trim(),
