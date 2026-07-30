@@ -65,11 +65,11 @@ function renderTopManagerCard(container) {
         <div class="manager-card__name">${topManager.name}</div>
         <div class="manager-card__stats">
           <div class="manager-stat">
-            <span class="manager-stat__label">Выручка</span>
+            <span class="manager-stat__label">Выручка:</span>
             <span class="manager-stat__value">${topManager.revenue}</span>
           </div>
           <div class="manager-stat">
-            <span class="manager-stat__label">Продажи</span>
+            <span class="manager-stat__label">Продажи:</span>
             <span class="manager-stat__value">${topManager.sales}</span>
           </div>
         </div>
@@ -230,6 +230,36 @@ function renderTopProducts() {
 }
 
 // ============================================================
+// География — рейтинг реальных городов
+// ============================================================
+
+/**
+ * Рендерит рейтинг городов с горизонтальными барами
+ */
+function renderCityRankings() {
+  const container = document.getElementById('city-rankings');
+  if (!container) return;
+
+  const maxRevenue = citiesData.length > 0 ? (citiesData[0].revenue || 1) : 1;
+  citiesData.forEach((city, idx) => {
+    const item = document.createElement('div');
+    item.className = 'city-ranking-item';
+    const revenue = city.revenue || 0;
+    const percent = maxRevenue > 0 ? Math.max(3, Math.round((revenue / maxRevenue) * 100)) : 0;
+    const label = city.label || (revenue >= 1e6 ? (revenue / 1e6).toFixed(1).replace('.', ',') + 'M' : Math.round(revenue / 1e3) + 'K');
+    item.innerHTML = `
+      <div class="city-ranking-rank">${idx + 1}</div>
+      <div class="city-ranking-name">${city.name}</div>
+      <div class="city-ranking-bar">
+        <div class="city-ranking-fill" style="width:${percent}%"></div>
+      </div>
+      <div class="city-ranking-amount">${label} ₽</div>
+    `;
+    container.appendChild(item);
+  });
+}
+
+// ============================================================
 // Инициализация дашборда
 // ============================================================
 
@@ -242,6 +272,7 @@ function initDashboard() {
   renderLiveTable();
   renderAlerts();
   renderTopManagers();
+  renderCityRankings();
   renderTopProducts();
 
   // Инициализация графиков (из charts.js)
@@ -250,8 +281,6 @@ function initDashboard() {
   if (typeof initRevenueChart === 'function') initRevenueChart();
   if (typeof initPaymentChart === 'function') initPaymentChart();
   if (typeof initAvgCheckChart === 'function') initAvgCheckChart();
-  if (typeof initForecastChart === 'function') initForecastChart();
-  if (typeof initSeasonalityChart === 'function') initSeasonalityChart();
 }
 
 document.addEventListener('DOMContentLoaded', initDashboard);

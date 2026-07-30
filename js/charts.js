@@ -89,22 +89,18 @@ function initManagerProgressChart() {
 // ============================================================
 
 /**
- * Инициализирует большой area chart динамики выручки
+ * Инициализирует mixed chart динамики выручки (дневные бары + зелёная накопительная)
  */
 function initRevenueChart() {
   const canvas = document.getElementById('revenue-chart');
   if (!canvas) return;
 
   new Chart(canvas, {
-    type: 'line',
     data: revenueChartData,
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      interaction: {
-        mode: 'index',
-        intersect: false
-      },
+      interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: {
           display: true,
@@ -112,10 +108,10 @@ function initRevenueChart() {
           align: 'start',
           labels: {
             color: '#94a3b8',
-            font: { size: 12 },
+            font: { size: 11 },
             usePointStyle: true,
-            pointStyleWidth: 20,
-            boxHeight: 2
+            pointStyleWidth: 14,
+            boxHeight: 4
           }
         },
         tooltip: {
@@ -131,17 +127,16 @@ function initRevenueChart() {
       },
       scales: {
         x: {
-          grid: { color: 'rgba(30,30,63,0.5)' },
-          ticks: { color: '#94a3b8', font: { size: 11 } }
+          grid: { color: 'rgba(30,30,63,0.4)' },
+          ticks: { color: '#94a3b8', font: { size: 10 } }
         },
         y: {
-          min: 0,
-          max: 6,
-          grid: { color: 'rgba(30,30,63,0.5)' },
+          beginAtZero: true,
+          grid: { color: 'rgba(30,30,63,0.4)' },
           ticks: {
             color: '#94a3b8',
-            font: { size: 11 },
-            callback: v => v + 'M'
+            font: { size: 10 },
+            callback: v => v + 'M ₽'
           }
         }
       }
@@ -246,10 +241,15 @@ function renderPaymentLegend() {
 // Задача 10.1: График среднего чека
 // ============================================================
 
+// ============================================================
+// Задача 10.1: График среднего чека
+// ============================================================
+
 /**
  * Инициализирует line chart среднего чека
  */
 function initAvgCheckChart() {
+
   const canvas = document.getElementById('avg-check-chart');
   if (!canvas) return;
 
@@ -289,111 +289,8 @@ function initAvgCheckChart() {
 }
 
 // ============================================================
-// Задача 12.5: График прогноза выручки
+// Задача 12.5–12.6: Прогноз и сезонность удалены из UI
 // ============================================================
-
-/**
- * Инициализирует line chart прогноза выручки
- */
-function initForecastChart() {
-  const canvas = document.getElementById('forecast-chart');
-  if (!canvas) return;
-
-  new Chart(canvas, {
-    type: 'line',
-    data: forecastData,
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: true,
-          position: 'top',
-          labels: {
-            color: '#94a3b8',
-            font: { size: 10 },
-            usePointStyle: true,
-            boxHeight: 2
-          }
-        },
-        tooltip: {
-          backgroundColor: '#1a1a35',
-          borderColor: '#1e1e3f',
-          borderWidth: 1,
-          callbacks: {
-            label: ctx => ctx.parsed.y !== null ? ` ${ctx.dataset.label}: ${ctx.parsed.y}M ₽` : ''
-          }
-        }
-      },
-      scales: {
-        x: {
-          grid: { color: 'rgba(30,30,63,0.5)' },
-          ticks: { color: '#94a3b8', font: { size: 10 } }
-        },
-        y: {
-          grid: { color: 'rgba(30,30,63,0.5)' },
-          ticks: {
-            color: '#94a3b8',
-            font: { size: 10 },
-            callback: v => v + 'M'
-          }
-        }
-      }
-    }
-  });
-}
-
-// ============================================================
-// Задача 12.6: График сезонности
-// ============================================================
-
-/**
- * Инициализирует multi-line chart сезонности
- */
-function initSeasonalityChart() {
-  const canvas = document.getElementById('seasonality-chart');
-  if (!canvas) return;
-
-  new Chart(canvas, {
-    type: 'line',
-    data: seasonalityData,
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: true,
-          position: 'top',
-          labels: {
-            color: '#94a3b8',
-            font: { size: 10 },
-            usePointStyle: true,
-            boxHeight: 2
-          }
-        },
-        tooltip: {
-          backgroundColor: '#1a1a35',
-          borderColor: '#1e1e3f',
-          borderWidth: 1,
-          callbacks: {
-            label: ctx => ctx.parsed.y !== null ? ` ${ctx.dataset.label}: ${ctx.parsed.y}M ₽` : ''
-          }
-        }
-      },
-      scales: {
-        x: {
-          grid: { color: 'rgba(30,30,63,0.5)' },
-          ticks: { color: '#94a3b8', font: { size: 10 } }
-        },
-        y: {
-          grid: { color: 'rgba(30,30,63,0.5)' },
-          ticks: {
-            color: '#94a3b8',
-            font: { size: 10 },
-            callback: v => v + 'M'
-          }
-        }
-      }
-    }
-  });
-}
+// Эти графики больше не используются (вкладки «Прогноз» и
+// «Сезонность» убраны из bottom-row, освободившееся место
+// занято географией на реальных городах).

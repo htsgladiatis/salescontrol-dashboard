@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SalesControl — Дашборд</title>
+  <title>SalesControl — Июль 2026</title>
   <link rel="stylesheet" href="css/styles.css">
 
     <style>
@@ -351,9 +351,9 @@
           </div>
         </div>
 
-        <!-- Row 4: Топ менеджеры + Карта + Топ продукты + Прогноз + Сезонность -->
+        <!-- Row 4: Топ менеджеры + География (реальные города) + Топ продукты -->
         <div class="bottom-row">
-          <!-- Топ менеджеры -->
+          <!-- Топ менеджеры (scrollable) -->
           <div class="card">
             <div class="card__header">
               <span class="card__title">Топ менеджеры</span>
@@ -361,71 +361,20 @@
             <div id="top-managers-list" class="top-managers-list"></div>
           </div>
 
-          <!-- Карта России -->
+          <!-- География — реальные города из CSV -->
           <div class="card">
             <div class="card__header">
               <span class="card__title">География продаж</span>
             </div>
-            <div id="russia-map" class="russia-map">
-              <svg viewBox="0 0 900 500" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
-                <!-- Упрощённый контур России -->
-                <path d="M80,180 L120,160 L160,140 L200,130 L240,120 L280,115 L320,110 L360,108 L400,110 L440,115 L480,120 L520,118 L560,115 L600,112 L640,110 L680,108 L720,110 L760,115 L800,120 L820,130 L830,150 L820,170 L800,185 L780,200 L760,210 L740,220 L720,230 L700,240 L680,250 L660,260 L640,270 L620,280 L600,285 L580,290 L560,295 L540,300 L520,305 L500,310 L480,315 L460,320 L440,325 L420,330 L400,335 L380,340 L360,345 L340,350 L320,355 L300,360 L280,365 L260,370 L240,375 L220,380 L200,385 L180,390 L160,395 L140,400 L120,405 L100,410 L80,415 L70,400 L65,380 L60,360 L58,340 L60,320 L65,300 L70,280 L75,260 L78,240 L80,220 L80,200 Z" fill="#1a1a35" stroke="#2d2d5e" stroke-width="1.5"/>
-                <!-- Точки городов -->
-                <g id="city-dots">
-                  <circle cx="420" cy="280" r="12" fill="#7c3aed" opacity="0.8" class="city-dot"/>
-                  <text x="420" y="265" text-anchor="middle" fill="#f1f5f9" font-size="10">Москва</text>
-                  <text x="420" y="300" text-anchor="middle" fill="#94a3b8" font-size="9">1.8M</text>
-
-                  <circle cx="370" cy="220" r="9" fill="#2563eb" opacity="0.8" class="city-dot"/>
-                  <text x="370" y="207" text-anchor="middle" fill="#f1f5f9" font-size="10">СПб</text>
-                  <text x="370" y="238" text-anchor="middle" fill="#94a3b8" font-size="9">980K</text>
-
-                  <circle cx="510" cy="290" r="8" fill="#10b981" opacity="0.8" class="city-dot"/>
-                  <text x="510" y="277" text-anchor="middle" fill="#f1f5f9" font-size="10">Казань</text>
-                  <text x="510" y="308" text-anchor="middle" fill="#94a3b8" font-size="9">650K</text>
-
-                  <circle cx="680" cy="310" r="7" fill="#f59e0b" opacity="0.8" class="city-dot"/>
-                  <text x="680" y="297" text-anchor="middle" fill="#f1f5f9" font-size="10">Новосибирск</text>
-                  <text x="680" y="328" text-anchor="middle" fill="#94a3b8" font-size="9">520K</text>
-
-                  <circle cx="580" cy="270" r="7" fill="#ef4444" opacity="0.8" class="city-dot"/>
-                  <text x="580" y="257" text-anchor="middle" fill="#f1f5f9" font-size="10">Екатеринбург</text>
-                  <text x="580" y="288" text-anchor="middle" fill="#94a3b8" font-size="9">480K</text>
-
-                  <circle cx="430" cy="360" r="6" fill="#7c3aed" opacity="0.8" class="city-dot"/>
-                  <text x="430" y="347" text-anchor="middle" fill="#f1f5f9" font-size="10">Краснодар</text>
-                  <text x="430" y="378" text-anchor="middle" fill="#94a3b8" font-size="9">370K</text>
-                </g>
-              </svg>
-            </div>
+            <div id="city-rankings" class="city-rankings"></div>
           </div>
 
-          <!-- Топ продукты -->
+          <!-- Топ продукты (scrollable) -->
           <div class="card">
             <div class="card__header">
               <span class="card__title">Топ продукты</span>
             </div>
             <div id="top-products-list" class="top-products-list"></div>
-          </div>
-
-          <!-- Прогноз выручки -->
-          <div class="card">
-            <div class="card__header">
-              <span class="card__title">Прогноз выручки</span>
-            </div>
-            <div class="chart-wrap" style="height:180px">
-              <canvas id="forecast-chart"></canvas>
-            </div>
-          </div>
-
-          <!-- Сезонность -->
-          <div class="card">
-            <div class="card__header">
-              <span class="card__title">Сезонность</span>
-            </div>
-            <div class="chart-wrap" style="height:180px">
-              <canvas id="seasonality-chart"></canvas>
-            </div>
           </div>
         </div>
       </div>

@@ -190,10 +190,10 @@ body {
   gap: 16px;
 }
 
-/* Row 4: Нижний ряд */
+/* Row 4: Нижний ряд (3 колонки) */
 .bottom-row {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: 1fr 1.2fr 1fr;
   gap: 16px;
 }
 
@@ -541,9 +541,10 @@ body {
 }
 
 .kpi-card__chart-wrap {
-  height: 50px;
-  margin-top: 4px;
+  height: 64px;
+  margin-top: 6px;
 }
+.kpi-card__chart-wrap canvas { width: 100% !important; height: 100% !important; display: block; }
 
 /* ============================================================
    16. Карточка топ-менеджера
@@ -572,35 +573,45 @@ body {
 .manager-card__left {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
 }
 
 .manager-card__name {
   font-size: 14px;
   font-weight: 700;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .manager-card__stats {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
 }
 
 .manager-stat {
   display: flex;
-  flex-direction: column;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
 }
 
 .manager-stat__label {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-secondary);
 }
 
 .manager-stat__value {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--text-primary);
+  white-space: nowrap;
 }
 
 .manager-card__right {
@@ -817,12 +828,16 @@ body {
 }
 
 /* ============================================================
-   21. Top managers list
+   21. Top managers list (scrollable)
    ============================================================ */
 .top-managers-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-color: var(--accent-purple) var(--bg-primary);
 }
 
 .top-manager-item {
@@ -832,11 +847,12 @@ body {
 }
 
 .top-manager-rank {
-  width: 20px;
+  width: 22px;
   font-size: 12px;
   font-weight: 700;
   color: var(--text-secondary);
   flex-shrink: 0;
+  text-align: right;
 }
 
 .top-manager-info {
@@ -858,34 +874,83 @@ body {
   font-weight: 600;
   color: var(--accent-green);
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* ============================================================
-   22. Russia map
+   22. City rankings — реальные города (вместо карты России)
    ============================================================ */
-.russia-map {
-  width: 100%;
-  height: 180px;
+.city-rankings {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-color: var(--accent-purple) var(--bg-primary);
+}
+
+.city-ranking-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.city-ranking-rank {
+  width: 22px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.city-ranking-name {
+  width: 90px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-primary);
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.city-dot {
-  animation: pulse 2s ease-in-out infinite;
+.city-ranking-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-card);
+  border-radius: 4px;
+  overflow: hidden;
+  min-width: 40px;
 }
 
-@keyframes pulse {
-  0%   { opacity: 0.8; }
-  50%  { opacity: 0.4; }
-  100% { opacity: 0.8; }
+.city-ranking-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7c3aed 0%, #2563eb 100%);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.city-ranking-amount {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent-green);
+  white-space: nowrap;
+  min-width: 78px;
+  text-align: right;
 }
 
 /* ============================================================
-   23. Top products list
+   23. Top products list (scrollable)
    ============================================================ */
 .top-products-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-color: var(--accent-purple) var(--bg-primary);
 }
 
 .top-product-item {
@@ -895,11 +960,12 @@ body {
 }
 
 .top-product-rank {
-  width: 20px;
+  width: 22px;
   font-size: 12px;
   font-weight: 700;
   color: var(--text-secondary);
   flex-shrink: 0;
+  text-align: right;
 }
 
 .top-product-info {
@@ -921,6 +987,7 @@ body {
   font-weight: 600;
   color: var(--accent-green);
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* ============================================================
