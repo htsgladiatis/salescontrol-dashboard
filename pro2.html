@@ -2308,7 +2308,7 @@ var NAV_ITEMS = [
   ['i-wallet', 'Финансы', 'secFinance', ''],
   ['i-forecast', 'Прогнозы', 'cardPlan', ''],
   ['i-alert', 'Оповещения', 'secAlerts', 'alerts'],
-  ['i-clip', 'Отчёты РОПа', 'secReports', ''],
+  ['i-clip', 'Отчёты РОПа', 'daily-report.html', 'report'],
   ['i-gear', 'Настройки', '', 'settings']
 ];
 function buildNav() {
@@ -2329,6 +2329,7 @@ function buildNav() {
     }
     b.addEventListener('click', function () {
       if (it[3] === 'settings') { openCmdk(); return; }
+      if (it[3] === 'report') { window.location.href = it[2]; return; }
       navGo(b, it[2]);
     });
     host.appendChild(b);
