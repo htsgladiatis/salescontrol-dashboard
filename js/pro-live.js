@@ -231,6 +231,21 @@
     const activity = charts.querySelector('#feed')?.closest('.card') || secondary.querySelector('#feed')?.closest('.card');
     if (activity && activity.parentElement !== secondary) secondary.appendChild(activity);
 
+    const legacyReport = Array.from(kpi.children).find(card => {
+      const label = card.querySelector('.kpi-lab');
+      return !card.id && card.classList.contains('kpi') && label && /отч[её]т/i.test(label.textContent);
+    });
+    if (legacyReport) {
+      legacyReport.id = 'proReports';
+      const legacyValue = legacyReport.querySelector('.kpi-val');
+      const legacyLabel = legacyReport.querySelector('.kpi-lab');
+      const legacySpark = legacyReport.querySelector('.kpi-spark');
+      if (legacyValue) legacyValue.id = 'proReportValue';
+      if (legacyLabel) legacyLabel.id = 'proReportLabel';
+      if (legacySpark) legacySpark.id = 'proReportSpark';
+      secondary.appendChild(legacyReport);
+    }
+
     if (!$('#proReports')) {
       const report = document.createElement('div');
       report.id = 'proReports';
@@ -270,6 +285,7 @@
     const chip = $('#ratingPeriod'); if (!chip || chip.dataset.bound) return;
     chip.dataset.bound = '1';
     chip.onclick = () => {
+      if (!state.loaded) return;
       const periods = ['today', 'yesterday', 'week', 'month', 'all'];
       const next = (periods.indexOf(state.ratingPeriod) + 1) % periods.length;
       state.ratingPeriod = periods[next];
@@ -289,6 +305,7 @@
 
   function render() {
     ensureLayout();
+    if (!state.loaded && state.error) { bindRating(); return; }
     const snapshot = data.buildSnapshot();
     renderChrome(snapshot); renderKpis(snapshot); renderRevenue(snapshot); renderDonut(snapshot); renderAverage(snapshot); renderFeed(snapshot); renderSales(snapshot); renderAlerts(snapshot); renderRanks(data.buildSnapshot(state.ratingPeriod)); renderReport(snapshot);
     const sidebarCount = $('#sidebarManagerCount'); if (sidebarCount) sidebarCount.textContent = snapshot.managers.length + '/' + data.MASTER_MANAGERS.length;
@@ -300,7 +317,7 @@
     ensureLayout(); bindFilters();
     await data.loadData();
     bindFilters(); render(); data.scheduleRefresh();
-    setInterval(() => { renderChrome(data.buildSnapshot()); }, 10000);
+    setInterval(() => { if (state.loaded) renderChrome(data.buildSnapshot()); }, 10000);
   }
 
   window.renderDashboard = render;
