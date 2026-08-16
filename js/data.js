@@ -1,787 +1,275 @@
-/* SalesControl. Сгенерировано: 31.07.2026, 00:14:56 */
-const kpiData = [
-  {
-    "id": "revenue",
-    "title": "Выручка за июль",
-    "value": "6 819 658 ₽",
-    "change": "",
-    "trend": "up",
-    "color": "#7c3aed",
-    "colorAlpha": "rgba(124,58,237,0.15)",
-    "icon": "💳",
-    "chartData": [
-      0.12,
-      0.17,
-      0.08,
-      0.15,
-      0,
-      0.23,
-      0.14,
-      0.19,
-      0.33,
-      0.21,
-      0.11,
-      0,
-      0.25,
-      0.06,
-      0.21,
-      0.21,
-      0.27,
-      0.24,
-      0.07,
-      0.23,
-      0.29,
-      0.24,
-      0.3,
-      0.54,
-      0.46,
-      0.14,
-      0.56,
-      0.5,
-      0.19,
-      0.34
-    ]
-  },
-  {
-    "id": "sales",
-    "title": "Отчётов за июль",
-    "value": "309",
-    "change": "",
-    "trend": "up",
-    "color": "#2563eb",
-    "colorAlpha": "rgba(37,99,235,0.15)",
-    "icon": "🛒",
-    "chartData": [
-      10,
-      10,
-      6,
-      6,
-      2,
-      11,
-      10,
-      13,
-      16,
-      12,
-      10,
-      1,
-      15,
-      12,
-      13,
-      11,
-      12,
-      6,
-      3,
-      10,
-      13,
-      13,
-      10,
-      13,
-      10,
-      7,
-      15,
-      16,
-      10,
-      13
-    ]
-  },
-  {
-    "id": "avgcheck",
-    "title": "Средний чек",
-    "value": "42 891 ₽",
-    "change": "",
-    "trend": "up",
-    "color": "#10b981",
-    "colorAlpha": "rgba(16,185,129,0.15)",
-    "icon": "📋",
-    "chartData": [
-      24880,
-      55001,
-      39701,
-      37750,
-      0,
-      46861,
-      46602,
-      37021,
-      47358,
-      41500,
-      22941,
-      0,
-      50361,
-      31302,
-      52845,
-      42945,
-      67702,
-      78903,
-      32800,
-      38384,
-      47684,
-      26222,
-      37526,
-      45135,
-      65044,
-      45002,
-      56269,
-      49534,
-      27287,
-      28310
-    ]
+/* SalesControl live data layer. Google Sheets is the source of truth. */
+(function () {
+  'use strict';
+
+  const CONFIG = {
+    spreadsheetId: '17Sw8CIV1CUlmbSkdyKH4Kc7s8Bk7uJGhTIXOxd9AzUk',
+    headersGid: 0,
+    itemsGid: 211792679,
+    refreshMs: 30000,
+    timeoutMs: 15000,
+  };
+
+  const MASTER_MANAGERS = [
+    'Аксененко Е.', 'Алейников В.', 'Битнерова С.', 'Богданчикова М.',
+    'Гаранина Н.', 'Гнездилова Е.', 'Гузеева Н.', 'Дадилова И.',
+    'Дашивец П.', 'Демиденко А.', 'Долгина М.', 'Иванова Т.',
+    'Игнатьева О.', 'Кичева В.', 'Кияева Н.', 'Котова В.',
+    'Лунга Т.', 'Нагиева Э.', 'Переверзев О.', 'Прохорова А.',
+    'Репина Б.', 'Рупосова Ю.', 'Седова И.', 'Шевердина А.', 'Шпетная А.'
+  ];
+
+  const state = window.dashboardState = {
+    rows: [],
+    items: [],
+    filters: { period: 'month', city: 'all', channel: 'all', manager: 'all', terminal: 'all' },
+    ratingPeriod: 'week',
+    loaded: false,
+    loading: false,
+    error: null,
+    lastFetchAt: 0,
+    refreshTimer: null,
+  };
+
+  function csvUrl(gid) {
+    return `https://docs.google.com/spreadsheets/d/${CONFIG.spreadsheetId}/export?format=csv&gid=${gid}`;
   }
-];
 
-const topManager = {
-  "name": "Репина Б.",
-  "initials": "РБ",
-  "revenue": "1 098 302 ₽",
-  "sales": 23,
-  "activity": 100,
-  "avatarColor": "#7c3aed"
-};
-
-const revenueChartData = {
-  "labels": [
-    "01.07",
-    "02.07",
-    "03.07",
-    "04.07",
-    "05.07",
-    "06.07",
-    "07.07",
-    "08.07",
-    "09.07",
-    "10.07",
-    "11.07",
-    "12.07",
-    "13.07",
-    "14.07",
-    "15.07",
-    "16.07",
-    "17.07",
-    "18.07",
-    "19.07",
-    "20.07",
-    "21.07",
-    "22.07",
-    "23.07",
-    "24.07",
-    "25.07",
-    "26.07",
-    "27.07",
-    "28.07",
-    "29.07",
-    "30.07"
-  ],
-  "datasets": [
-    {
-      "type": "bar",
-      "label": "Выручка за день",
-      "data": [
-        0.12,
-        0.17,
-        0.08,
-        0.15,
-        0,
-        0.23,
-        0.14,
-        0.19,
-        0.33,
-        0.21,
-        0.11,
-        0,
-        0.25,
-        0.06,
-        0.21,
-        0.21,
-        0.27,
-        0.24,
-        0.07,
-        0.23,
-        0.29,
-        0.24,
-        0.3,
-        0.54,
-        0.46,
-        0.14,
-        0.56,
-        0.5,
-        0.19,
-        0.34
-      ],
-      "backgroundColor": "rgba(124,58,237,0.55)",
-      "borderColor": "rgba(124,58,237,0.95)",
-      "borderWidth": 1,
-      "borderRadius": 4,
-      "maxBarThickness": 26,
-      "yAxisID": "y"
-    },
-    {
-      "type": "line",
-      "label": "Накопительно",
-      "borderColor": "#10b981",
-      "backgroundColor": "rgba(16,185,129,0.18)",
-      "fill": true,
-      "tension": 0.35,
-      "pointRadius": 0,
-      "borderWidth": 2,
-      "yAxisID": "y"
+  function parseCSV(text) {
+    const rows = [];
+    let row = [], cell = '', quoted = false;
+    for (let i = 0; i < text.length; i += 1) {
+      const ch = text[i];
+      if (quoted) {
+        if (ch === '"' && text[i + 1] === '"') { cell += '"'; i += 1; }
+        else if (ch === '"') quoted = false;
+        else cell += ch;
+      } else if (ch === '"') quoted = true;
+      else if (ch === ',') { row.push(cell); cell = ''; }
+      else if (ch === '\n') { row.push(cell); if (row.some(Boolean)) rows.push(row); row = []; cell = ''; }
+      else if (ch !== '\r') cell += ch;
     }
-  ]
-};
+    if (cell || row.length) { row.push(cell); if (row.some(Boolean)) rows.push(row); }
+    return rows;
+  }
 
-const paymentData = {
-  "labels": [
-    "Наличные",
-    "Безналичные",
-    "Кредит/Рассрочка",
-    "Инкассация"
-  ],
-  "percentages": [
-    8,
-    79,
-    3,
-    11
-  ],
-  "amounts": [
-    "578 172 ₽",
-    "6 016 679 ₽",
-    "224 807 ₽",
-    "838 371 ₽"
-  ],
-  "datasets": [
-    {
-      "data": [
-        8,
-        79,
-        3,
-        11
-      ],
-      "backgroundColor": [
-        "#10b981",
-        "#2563eb",
-        "#7c3aed",
-        "#f59e0b"
-      ],
-      "borderWidth": 0,
-      "hoverOffset": 8
+  function parseAmount(value) {
+    const normalized = String(value == null ? '' : value)
+      .replace(/[\s\u00a0]/g, '')
+      .replace(',', '.')
+      .replace(/[^0-9.-]/g, '');
+    const number = Number(normalized);
+    return Number.isFinite(number) ? number : 0;
+  }
+
+  function parseDateValue(value) {
+    const raw = String(value || '').replace(/^'/, '').trim();
+    const match = /^(\d{2})\.(\d{2})\.(\d{4})(?:[ ,]+(\d{2}):(\d{2})(?::(\d{2}))?)?/.exec(raw);
+    if (!match) return { raw, iso: '', timestamp: 0, time: '' };
+    const day = match[1], month = match[2], year = match[3];
+    const time = `${match[4] || '00'}:${match[5] || '00'}:${match[6] || '00'}`;
+    const timestamp = new Date(`${year}-${month}-${day}T${time}`).getTime();
+    return { raw, iso: `${year}-${month}-${day}`, timestamp: Number.isFinite(timestamp) ? timestamp : 0, time };
+  }
+
+  function normalizeHeaderRow(cells) {
+    const date = parseDateValue(cells[0]);
+    return {
+      datetime: date.raw,
+      dateISO: date.iso,
+      timestamp: date.timestamp,
+      time: date.time,
+      terminalNumber: String(cells[1] || '').trim(),
+      manager: String(cells[2] || '').trim(),
+      channel: String(cells[3] || '').trim(),
+      city: String(cells[4] || '').trim(),
+      terminal: String(cells[5] || '').trim(),
+      cash: parseAmount(cells[6]),
+      cashless: parseAmount(cells[7]),
+      credit: parseAmount(cells[8]),
+      encashment: parseAmount(cells[9]),
+      amount: parseAmount(cells[10]),
+      receipt: String(cells[11] || '').trim(),
+      allowance: parseAmount(cells[12]),
+      comment: String(cells[13] || '').trim(),
+      txid: String(cells[14] || '').trim(),
+    };
+  }
+
+  function normalizeItemRow(cells) {
+    return {
+      itemId: String(cells[0] || '').trim(),
+      txid: String(cells[1] || '').trim(),
+      datetime: String(cells[2] || '').trim(),
+      manager: String(cells[3] || '').trim(),
+      product: String(cells[4] || '').trim(),
+      quantity: parseAmount(cells[5]),
+      unitPrice: parseAmount(cells[6]),
+      lineTotal: parseAmount(cells[7]),
+      comment: String(cells[8] || '').trim(),
+    };
+  }
+
+  function dateOnly(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  function shiftDate(date, days) {
+    const copy = new Date(date);
+    copy.setDate(copy.getDate() + days);
+    return copy;
+  }
+
+  function getPeriodRange(period) {
+    const now = new Date();
+    const today = dateOnly(now);
+    if (period === 'today') return { start: today, end: today, label: 'Сегодня' };
+    if (period === 'yesterday') { const d = dateOnly(shiftDate(now, -1)); return { start: d, end: d, label: 'Вчера' }; }
+    if (period === 'week') return { start: dateOnly(shiftDate(now, -6)), end: today, label: 'Последние 7 дней' };
+    if (period === 'prev-month') {
+      const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const last = new Date(now.getFullYear(), now.getMonth(), 0);
+      return { start: dateOnly(first), end: dateOnly(last), label: first.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }) };
     }
-  ]
-};
-
-const activityData = [
-  {
-    "time": "21:49:38",
-    "type": "success",
-    "text": "Продажа",
-    "amount": "46 403 ₽",
-    "manager": "Седова И."
-  },
-  {
-    "time": "21:44:51",
-    "type": "success",
-    "text": "Отчёт отправлен",
-    "amount": "0 ₽",
-    "manager": "Кичева В."
-  },
-  {
-    "time": "21:40:49",
-    "type": "success",
-    "text": "Продажа",
-    "amount": "89 502 ₽",
-    "manager": "Репина Б."
-  },
-  {
-    "time": "21:38:31",
-    "type": "success",
-    "text": "Продажа",
-    "amount": "13 500 ₽",
-    "manager": "Иванова Т."
-  },
-  {
-    "time": "16:23:20",
-    "type": "success",
-    "text": "Продажа",
-    "amount": "69 602 ₽",
-    "manager": "Алейников В."
-  },
-  {
-    "time": "14:53:48",
-    "type": "success",
-    "text": "Продажа",
-    "amount": "1 ₽",
-    "manager": "Дашивец П."
+    if (period === 'all') return { start: '', end: '', label: 'Весь период' };
+    return { start: dateOnly(new Date(now.getFullYear(), now.getMonth(), 1)), end: today, label: now.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }) };
   }
-];
 
-const avgCheckData = {
-  "labels": [
-    "01.07",
-    "02.07",
-    "03.07",
-    "04.07",
-    "05.07",
-    "06.07",
-    "07.07",
-    "08.07",
-    "09.07",
-    "10.07",
-    "11.07",
-    "12.07",
-    "13.07",
-    "14.07",
-    "15.07",
-    "16.07",
-    "17.07",
-    "18.07",
-    "19.07",
-    "20.07",
-    "21.07",
-    "22.07",
-    "23.07",
-    "24.07",
-    "25.07",
-    "26.07",
-    "27.07",
-    "28.07",
-    "29.07",
-    "30.07"
-  ],
-  "datasets": [
-    {
-      "label": "Средний чек",
-      "data": [
-        24880,
-        55001,
-        39701,
-        37750,
-        0,
-        46861,
-        46602,
-        37021,
-        47358,
-        41500,
-        22941,
-        0,
-        50361,
-        31302,
-        52845,
-        42945,
-        67702,
-        78903,
-        32800,
-        38384,
-        47684,
-        26222,
-        37526,
-        45135,
-        65044,
-        45002,
-        56269,
-        49534,
-        27287,
-        28310
-      ],
-      "borderColor": "#10b981",
-      "backgroundColor": "rgba(16,185,129,0.1)",
-      "fill": true,
-      "tension": 0.4,
-      "pointRadius": 0,
-      "borderWidth": 2
-    }
-  ]
-};
+  function getPeriodLabel(period) { return getPeriodRange(period).label; }
 
-const liveSalesData = [
-  {
-    "terminal": "7222-7978",
-    "manager": "Седова И.",
-    "city": "Сочи",
-    "amount": "46 403 ₽",
-    "payment": "💳",
-    "receipt": ""
-  },
-  {
-    "terminal": "7222-7978",
-    "manager": "Кичева В.",
-    "city": "Сочи",
-    "amount": "0 ₽",
-    "payment": "💵",
-    "receipt": ""
-  },
-  {
-    "terminal": "1380-7978",
-    "manager": "Репина Б.",
-    "city": "Сочи",
-    "amount": "89 502 ₽",
-    "payment": "💳",
-    "receipt": ""
-  },
-  {
-    "terminal": "7222",
-    "manager": "Иванова Т.",
-    "city": "Сочи",
-    "amount": "13 500 ₽",
-    "payment": "💳",
-    "receipt": ""
-  },
-  {
-    "terminal": "4350",
-    "manager": "Алейников В.",
-    "city": "Анапа",
-    "amount": "69 602 ₽",
-    "payment": "💳",
-    "receipt": ""
+  function rowMatchesFilters(row, periodOverride) {
+    const period = periodOverride || state.filters.period;
+    const range = getPeriodRange(period);
+    return (!range.start || (row.dateISO >= range.start && row.dateISO <= range.end))
+      && (state.filters.city === 'all' || row.city === state.filters.city)
+      && (state.filters.channel === 'all' || row.channel === state.filters.channel)
+      && (state.filters.manager === 'all' || row.manager === state.filters.manager)
+      && (state.filters.terminal === 'all' || row.terminalNumber === state.filters.terminal);
   }
-];
 
-const topManagersData = [
-  {
-    "rank": 1,
-    "name": "Репина Б.",
-    "revenue": "1 098 302 ₽",
-    "progress": 100,
-    "color": "#7c3aed"
-  },
-  {
-    "rank": 2,
-    "name": "Рупосова Ю.",
-    "revenue": "829 515 ₽",
-    "progress": 76,
-    "color": "#2563eb"
-  },
-  {
-    "rank": 3,
-    "name": "Алейников В.",
-    "revenue": "725 304 ₽",
-    "progress": 66,
-    "color": "#10b981"
-  },
-  {
-    "rank": 4,
-    "name": "Кичева В.",
-    "revenue": "719 316 ₽",
-    "progress": 65,
-    "color": "#f59e0b"
-  },
-  {
-    "rank": 5,
-    "name": "Седова И.",
-    "revenue": "547 556 ₽",
-    "progress": 50,
-    "color": "#ef4444"
-  },
-  {
-    "rank": 6,
-    "name": "Дашивец П.",
-    "revenue": "469 314 ₽",
-    "progress": 43
-  },
-  {
-    "rank": 7,
-    "name": "Прохорова А.",
-    "revenue": "443 306 ₽",
-    "progress": 40
-  },
-  {
-    "rank": 8,
-    "name": "Дадилова И.",
-    "revenue": "391 514 ₽",
-    "progress": 36
-  },
-  {
-    "rank": 9,
-    "name": "Иванова Т.",
-    "revenue": "337 710 ₽",
-    "progress": 31
-  },
-  {
-    "rank": 10,
-    "name": "Богданчикова М.",
-    "revenue": "319 810 ₽",
-    "progress": 29
-  },
-  {
-    "rank": 11,
-    "name": "Гнездилова Е.",
-    "revenue": "204 000 ₽",
-    "progress": 19
-  },
-  {
-    "rank": 12,
-    "name": "Нагиева Э.",
-    "revenue": "131 604 ₽",
-    "progress": 12
-  },
-  {
-    "rank": 13,
-    "name": "Шевердина А.",
-    "revenue": "130 901 ₽",
-    "progress": 12
-  },
-  {
-    "rank": 14,
-    "name": "Демиденко А.",
-    "revenue": "116 202 ₽",
-    "progress": 11
-  },
-  {
-    "rank": 15,
-    "name": "Аксененко Е.",
-    "revenue": "95 501 ₽",
-    "progress": 9
-  },
-  {
-    "rank": 16,
-    "name": "Долгина М.",
-    "revenue": "88 500 ₽",
-    "progress": 8
-  },
-  {
-    "rank": 17,
-    "name": "Шпетная А.",
-    "revenue": "53 302 ₽",
-    "progress": 5
-  },
-  {
-    "rank": 18,
-    "name": "Лунга Т.",
-    "revenue": "48 700 ₽",
-    "progress": 4
-  },
-  {
-    "rank": 19,
-    "name": "Кияева Н.",
-    "revenue": "27 600 ₽",
-    "progress": 3
-  },
-  {
-    "rank": 20,
-    "name": "Гузеева Н.",
-    "revenue": "24 500 ₽",
-    "progress": 2
-  },
-  {
-    "rank": 21,
-    "name": "Игнатьева О.",
-    "revenue": "17 200 ₽",
-    "progress": 2
-  },
-  {
-    "rank": 22,
-    "name": "Гаранина Н.",
-    "revenue": "1 ₽",
-    "progress": 0
-  },
-  {
-    "rank": 23,
-    "name": "Переверзев О.",
-    "revenue": "0 ₽",
-    "progress": 0
+  function filteredRows(periodOverride) {
+    return state.rows.filter(row => row.dateISO && row.manager && rowMatchesFilters(row, periodOverride));
   }
-];
 
-const citiesData = [
-  {
-    "name": "Сочи",
-    "revenue": 3307395,
-    "label": "3,3M"
-  },
-  {
-    "name": "КМВ",
-    "revenue": 2015034,
-    "label": "2,0M"
-  },
-  {
-    "name": "Анапа",
-    "revenue": 572700,
-    "label": "573K"
-  },
-  {
-    "name": "Москва",
-    "revenue": 533015,
-    "label": "533K"
-  },
-  {
-    "name": "Белокуриха",
-    "revenue": 391514,
-    "label": "392K"
+  function aggregate(rows) {
+    const total = rows.reduce((sum, row) => sum + row.amount, 0);
+    const payments = {
+      cash: rows.reduce((sum, row) => sum + row.cash, 0),
+      cashless: rows.reduce((sum, row) => sum + row.cashless, 0),
+      credit: rows.reduce((sum, row) => sum + row.credit, 0),
+      encashment: rows.reduce((sum, row) => sum + row.encashment, 0),
+    };
+    const managers = {};
+    const cities = {};
+    const byDate = {};
+    rows.forEach(row => {
+      const manager = managers[row.manager] ||= { name: row.manager, revenue: 0, reports: 0 };
+      manager.revenue += row.amount; manager.reports += 1;
+      cities[row.city] = (cities[row.city] || 0) + row.amount;
+      const day = byDate[row.dateISO] ||= { date: row.dateISO, revenue: 0, reports: 0, average: 0 };
+      day.revenue += row.amount; day.reports += 1;
+    });
+    Object.values(byDate).forEach(day => { day.average = day.reports ? day.revenue / day.reports : 0; });
+    const managersList = Object.values(managers).sort((a, b) => b.revenue - a.revenue);
+    return {
+      rows,
+      reports: rows.length,
+      revenue: total,
+      average: rows.length ? total / rows.length : 0,
+      payments,
+      paymentTotal: Object.values(payments).reduce((sum, value) => sum + value, 0),
+      managers: managersList,
+      cities: Object.entries(cities).map(([name, revenue]) => ({ name, revenue })).sort((a, b) => b.revenue - a.revenue),
+      byDate: Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date)),
+      recent: rows.slice().sort((a, b) => b.timestamp - a.timestamp).slice(0, 8),
+    };
   }
-];
 
-const topProductsData = [
-  {
-    "rank": 1,
-    "name": "Neuro",
-    "revenue": "2 546 100 ₽",
-    "share": 44
-  },
-  {
-    "rank": 2,
-    "name": "Step L",
-    "revenue": "675 540 ₽",
-    "share": 12
-  },
-  {
-    "rank": 3,
-    "name": "Derma Pro",
-    "revenue": "454 900 ₽",
-    "share": 8
-  },
-  {
-    "rank": 4,
-    "name": "Kegel",
-    "revenue": "422 000 ₽",
-    "share": 7
-  },
-  {
-    "rank": 5,
-    "name": "Lift",
-    "revenue": "372 620 ₽",
-    "share": 6
-  },
-  {
-    "rank": 6,
-    "name": "Hot & Cold",
-    "revenue": "293 100 ₽",
-    "share": 5
-  },
-  {
-    "rank": 7,
-    "name": "Dent",
-    "revenue": "238 000 ₽",
-    "share": 4
-  },
-  {
-    "rank": 8,
-    "name": "Pneumo",
-    "revenue": "159 400 ₽",
-    "share": 3
-  },
-  {
-    "rank": 9,
-    "name": "Sport mini",
-    "revenue": "97 700 ₽",
-    "share": 2
-  },
-  {
-    "rank": 10,
-    "name": "Recovery",
-    "revenue": "82 800 ₽",
-    "share": 1
-  },
-  {
-    "rank": 11,
-    "name": "Гель контактный",
-    "revenue": "71 250 ₽",
-    "share": 1
-  },
-  {
-    "rank": 12,
-    "name": "Sport",
-    "revenue": "59 800 ₽",
-    "share": 1
-  },
-  {
-    "rank": 13,
-    "name": "Flow",
-    "revenue": "55 500 ₽",
-    "share": 1
-  },
-  {
-    "rank": 14,
-    "name": "Носки",
-    "revenue": "42 400 ₽",
-    "share": 1
-  },
-  {
-    "rank": 15,
-    "name": "Flow mini",
-    "revenue": "34 380 ₽",
-    "share": 1
-  },
-  {
-    "rank": 16,
-    "name": "Step M",
-    "revenue": "32 100 ₽",
-    "share": 1
-  },
-  {
-    "rank": 17,
-    "name": "Shape",
-    "revenue": "28 700 ₽",
-    "share": 0
-  },
-  {
-    "rank": 18,
-    "name": "Перчатки",
-    "revenue": "21 144 ₽",
-    "share": 0
-  },
-  {
-    "rank": 19,
-    "name": "Насадки Dent",
-    "revenue": "19 200 ₽",
-    "share": 0
-  },
-  {
-    "rank": 20,
-    "name": "Орион",
-    "revenue": "18 900 ₽",
-    "share": 0
-  },
-  {
-    "rank": 21,
-    "name": "Электроды силиконовые",
-    "revenue": "9 800 ₽",
-    "share": 0
-  },
-  {
-    "rank": 22,
-    "name": "Электроды хлопковые",
-    "revenue": "6 300 ₽",
-    "share": 0
-  },
-  {
-    "rank": 23,
-    "name": "Зонд ректальный",
-    "revenue": "4 900 ₽",
-    "share": 0
-  },
-  {
-    "rank": 24,
-    "name": "Клипсы электроды",
-    "revenue": "83 ₽",
-    "share": 0
+  function buildSnapshot(periodOverride) {
+    const rows = filteredRows(periodOverride);
+    const result = aggregate(rows);
+    const txCounts = {};
+    rows.forEach(row => { if (row.txid) txCounts[row.txid] = (txCounts[row.txid] || 0) + 1; });
+    const duplicateCount = Object.values(txCounts).filter(count => count > 1).reduce((sum, count) => sum + count - 1, 0);
+    const missingReceipt = rows.filter(row => !row.receipt).length;
+    const zeroReports = rows.filter(row => row.amount === 0).length;
+    const noId = rows.filter(row => !row.txid).length;
+    const todayRows = filteredRows('today');
+    const todayManagers = new Set(todayRows.map(row => row.manager));
+    const missingToday = state.filters.period === 'today' ? MASTER_MANAGERS.filter(manager => !todayManagers.has(manager)).length : 0;
+    result.alerts = [
+      ...(missingToday ? [{ type: 'error', text: 'Отсутствуют отчёты сегодня', count: missingToday }] : []),
+      ...(missingReceipt ? [{ type: 'error', text: 'Отсутствует фото чека', count: missingReceipt }] : []),
+      ...(duplicateCount ? [{ type: 'warning', text: 'Дублирующиеся транзакции', count: duplicateCount }] : []),
+      ...(zeroReports ? [{ type: 'warning', text: 'Нулевые отчёты', count: zeroReports }] : []),
+      ...(noId ? [{ type: 'warning', text: 'Записи без ID', count: noId }] : []),
+    ];
+    result.items = state.items.filter(item => rows.some(row => row.txid && row.txid === item.txid));
+    return result;
   }
-];
 
-const alertsData = [
-  {
-    "type": "error",
-    "text": "Отсутствуют отчёты",
-    "count": 12,
-    "icon": "⚠"
-  },
-  {
-    "type": "warning",
-    "text": "Расхождение по продажам",
-    "count": 5,
-    "icon": "⚠"
-  },
-  {
-    "type": "error",
-    "text": "Отсутствует фото чека",
-    "count": 23,
-    "icon": "⚠"
-  },
-  {
-    "type": "warning",
-    "text": "Аномально высокий чек",
-    "count": 7,
-    "icon": ""
-  },
-  {
-    "type": "error",
-    "text": "Дублирующиеся транзакции",
-    "count": 3,
-    "icon": "⚠"
+  function formatCurrency(value, compact) {
+    const number = Math.round(Number(value) || 0);
+    if (compact && Math.abs(number) >= 1000000) return `${(number / 1000000).toFixed(1).replace('.', ',')}M ₽`;
+    if (compact && Math.abs(number) >= 1000) return `${Math.round(number / 1000)}K ₽`;
+    return `${number.toLocaleString('ru-RU')} ₽`;
   }
-];
+
+  function formatDateTime(row) { return row.datetime || '—'; }
+  function escapeHtml(value) { return String(value == null ? '' : value).replace(/[&<>'"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[ch])); }
+  function getInitials(name) { return String(name || '?').trim().split(/\s+/).slice(0, 2).map(word => word[0] || '').join('').toUpperCase() || '?'; }
+  function colorFor(name) { let hash = 0; for (let i = 0; i < name.length; i += 1) hash = (hash * 31 + name.charCodeAt(i)) | 0; return ['#8b5cff', '#3d7dff', '#26d07c', '#ffb020', '#ff5a6e'][Math.abs(hash) % 5]; }
+
+  async function fetchText(url) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), CONFIG.timeoutMs);
+    try {
+      const response = await fetch(`${url}&_=${Date.now()}`, { cache: 'no-store', signal: controller.signal });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.text();
+    } finally { clearTimeout(timer); }
+  }
+
+  async function loadData() {
+    if (state.loading) return false;
+    state.loading = true;
+    try {
+      const [headersText, itemsText] = await Promise.all([fetchText(csvUrl(CONFIG.headersGid)), fetchText(csvUrl(CONFIG.itemsGid))]);
+      const headerRows = parseCSV(headersText);
+      const itemRows = parseCSV(itemsText);
+      if (headerRows.length < 2) throw new Error('Google Sheets вернул пустой лист заголовков');
+      const expected = ['Дата и время', 'Номер терминала', 'Менеджер'];
+      expected.forEach((name, index) => { if (headerRows[0][index] !== name) throw new Error(`Изменилась схема: колонка ${index + 1}`); });
+      state.rows = headerRows.slice(1).map(normalizeHeaderRow).filter(row => row.dateISO && row.manager);
+      state.items = itemRows.slice(1).map(normalizeItemRow).filter(item => item.txid && item.product);
+      state.loaded = true;
+      state.error = null;
+      state.lastFetchAt = Date.now();
+      return true;
+    } catch (error) {
+      state.error = error.name === 'AbortError' ? 'Таймаут загрузки данных' : error.message;
+      return false;
+    } finally { state.loading = false; }
+  }
+
+  function scheduleRefresh() {
+    if (state.refreshTimer) clearTimeout(state.refreshTimer);
+    state.refreshTimer = setTimeout(async () => {
+      if (document.visibilityState === 'visible') {
+        await loadData();
+        if (window.renderDashboard) window.renderDashboard();
+      }
+      scheduleRefresh();
+    }, CONFIG.refreshMs);
+  }
+
+  window.dashboardData = {
+    CONFIG, MASTER_MANAGERS, state, loadData, scheduleRefresh, buildSnapshot, filteredRows,
+    getPeriodRange, getPeriodLabel, formatCurrency, formatDateTime, escapeHtml, getInitials, colorFor,
+    setFilter(name, value) { state.filters[name] = value; },
+    setRatingPeriod(value) { state.ratingPeriod = value; },
+  };
+}());

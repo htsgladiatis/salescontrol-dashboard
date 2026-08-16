@@ -3,386 +3,144 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SalesControl — Июль 2026</title>
+  <title>SalesControl — Дашборд</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
-
-    <style>
-      .cta-banner {
-        display: flex; align-items: center; gap: 16px;
-        padding: 16px 20px; margin-bottom: 16px;
-        background: linear-gradient(135deg, rgba(124,58,237,0.18), rgba(37,99,235,0.10));
-        border: 1px solid rgba(124,58,237,0.35);
-        border-radius: 14px;
-        text-decoration: none; color: #e8eaed;
-        transition: all 0.15s ease;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-      }
-      .cta-banner:hover {
-        transform: translateY(-1px);
-        border-color: #7c3aed;
-        box-shadow: 0 4px 12px rgba(124,58,237,0.25);
-        filter: brightness(1.05);
-      }
-      .cta-banner__icon {
-        width: 48px; height: 48px; flex-shrink: 0;
-        background: linear-gradient(135deg, #7c3aed, #2563eb);
-        border-radius: 10px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 22px;
-      }
-      .cta-banner__text { flex: 1; min-width: 0; }
-      .cta-banner__title {
-        font-size: 15px; font-weight: 700; line-height: 1.3;
-        display: flex; align-items: center; gap: 8px;
-      }
-      .cta-banner__live {
-        font-size: 10px; font-weight: 700;
-        background: rgba(16,185,129,0.18); color: #10b981;
-        padding: 3px 8px; border-radius: 999px;
-        letter-spacing: 0.05em;
-        display: inline-flex; align-items: center; gap: 4px;
-      }
-      .cta-banner__live::before {
-        content: ''; display: inline-block;
-        width: 6px; height: 6px; border-radius: 50%;
-        background: #10b981;
-        animation: cta-pulse 2s ease-in-out infinite;
-      }
-      @keyframes cta-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-      .cta-banner__desc {
-        font-size: 12px; color: #9aa0a6;
-        margin-top: 3px; line-height: 1.4;
-      }
-      .cta-banner__arrow {
-        margin-left: auto;
-        font-size: 22px; font-weight: 700;
-        color: #7c3aed;
-        transition: transform 0.15s ease;
-      }
-      .cta-banner:hover .cta-banner__arrow { transform: translateX(4px); }
-      @media (max-width: 768px) {
-        .cta-banner { padding: 14px 16px; gap: 12px; }
-        .cta-banner__icon { width: 40px; height: 40px; font-size: 18px; }
-        .cta-banner__title { font-size: 14px; }
-        .cta-banner__desc { font-size: 11px; }
-      }
-    </style>
-  </head>
+</head>
 <body>
+  <div class="bar-prog" id="barProg"></div>
+  <button class="to-top" id="toTop" aria-label="Наверх">↑</button>
   <div class="app">
     <aside class="sidebar">
-      <!-- Логотип -->
-      <div class="sidebar__logo">
-        <span class="logo-icon">⚡</span>
-        <span class="logo-text">SalesControl</span>
-      </div>
-
-      <!-- Навигация -->
-      <nav class="sidebar__nav">
-        <a class="nav-item nav-item--active" href="#">
-          <span class="nav-icon">🏠</span>
-          <span class="nav-label">Дашборд</span>
-        </a>
-        <a class="nav-item" href="#">
-          <span class="nav-icon">📊</span>
-          <span class="nav-label">Продажи</span>
-        </a>
-        <a class="nav-item" href="#">
-          <span class="nav-icon">👥</span>
-          <span class="nav-label">Менеджеры</span>
-        </a>
-        <a class="nav-item" href="#">
-          <span class="nav-icon">🗺</span>
-          <span class="nav-label">География</span>
-        </a>
-        <a class="nav-item" href="#">
-          <span class="nav-icon">📦</span>
-          <span class="nav-label">Продукты</span>
-        </a>
-        <a class="nav-item" href="#">
-          <span class="nav-icon">💰</span>
-          <span class="nav-label">Финансы</span>
-        </a>
-        <a class="nav-item" href="#">
-          <span class="nav-icon">📈</span>
-          <span class="nav-label">Прогнозы</span>
-        </a>
-        <a class="nav-item" href="#">
-          <span class="nav-icon">🔔</span>
-          <span class="nav-label">Оповещения</span>
-          <span class="badge badge--red nav-badge">8</span>
-        </a>
-        <a class="nav-item" href="daily-report.html">
-          <span class="nav-icon">📋</span>
-          <span class="nav-label">Отчёты РОПа</span>
-          <span class="badge nav-badge" style="background:rgba(124,58,237,0.3);color:#c4b5fd;">LIVE</span>
-        </a>
-        <a class="nav-item" href="#">
-          <span class="nav-icon">⚙</span>
-          <span class="nav-label">Настройки</span>
-        </a>
+      <div class="sidebar__logo"><span class="logo-icon">⚡</span><span class="logo-text">SalesControl</span></div>
+      <nav class="sidebar__nav" aria-label="Навигация">
+        <a class="nav-item nav-item--active" href="#dashboard"><span class="nav-icon">🏠</span><span class="nav-label">Дашборд</span></a>
+        <a class="nav-item" href="#recent-sales"><span class="nav-icon">📊</span><span class="nav-label">Продажи</span></a>
+        <a class="nav-item" href="#manager-rating"><span class="nav-icon">👥</span><span class="nav-label">Менеджеры</span></a>
+        <a class="nav-item" href="#geography"><span class="nav-icon">🗺</span><span class="nav-label">География</span></a>
+        <a class="nav-item" href="#products"><span class="nav-icon">📦</span><span class="nav-label">Продукты</span></a>
+        <a class="nav-item" href="#payment-methods"><span class="nav-icon">💰</span><span class="nav-label">Финансы</span></a>
+        <a class="nav-item" href="#alerts"><span class="nav-icon">🔔</span><span class="nav-label">Оповещения</span><span class="badge badge--red nav-badge" id="navAlertCount">—</span></a>
+        <a class="nav-item" href="daily-report.html"><span class="nav-icon">📋</span><span class="nav-label">Отчёты РОПа</span><span class="badge nav-badge nav-badge--muted">ОТЧЁТЫ</span></a>
       </nav>
-
-      <!-- Онлайн менеджеры -->
       <div class="sidebar__managers">
-        <div class="managers__header">
-          <span>Онлайн менеджеры</span>
-          <span class="managers__count">48/62</span>
-        </div>
-        <div class="managers__avatars">
-          <div class="avatar avatar--sm" style="background:#7c3aed">АС</div>
-          <div class="avatar avatar--sm" style="background:#2563eb">ЕИ</div>
-          <div class="avatar avatar--sm" style="background:#10b981">ДП</div>
-          <div class="avatar avatar--sm" style="background:#f59e0b">МК</div>
-          <div class="avatar avatar--sm" style="background:#ef4444">ОС</div>
-          <div class="avatar avatar--sm" style="background:#7c3aed">НВ</div>
-          <div class="avatar avatar--sm" style="background:#2563eb">АМ</div>
-          <div class="avatar avatar--sm" style="background:#10b981">+32</div>
-        </div>
+        <div class="managers__header"><span>Менеджеры в периоде</span><span class="managers__count" id="sidebarManagerCount">—</span></div>
+        <div class="managers__avatars" id="sidebarManagerAvatars"><span class="sidebar-muted">Загрузка…</span></div>
       </div>
-
-      <!-- Мобильное приложение -->
       <div class="sidebar__mobile-app">
         <div class="mobile-app__title">Мобильное приложение</div>
-        <div class="mobile-app__desc">Сканируйте чек, отслеживайте продажи в реальном времени</div>
-        <div class="qr-code">
+        <div class="mobile-app__desc">Сканируйте чек и отслеживайте продажи в одном месте</div>
+        <div class="qr-code" aria-hidden="true">
           <svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-            <!-- QR code simplified pattern -->
-            <rect width="80" height="80" fill="#1a1a35" rx="4"/>
-            <!-- Top-left finder pattern -->
-            <rect x="8" y="8" width="22" height="22" fill="none" stroke="#7c3aed" stroke-width="3" rx="2"/>
-            <rect x="13" y="13" width="12" height="12" fill="#7c3aed" rx="1"/>
-            <!-- Top-right finder pattern -->
-            <rect x="50" y="8" width="22" height="22" fill="none" stroke="#7c3aed" stroke-width="3" rx="2"/>
-            <rect x="55" y="13" width="12" height="12" fill="#7c3aed" rx="1"/>
-            <!-- Bottom-left finder pattern -->
-            <rect x="8" y="50" width="22" height="22" fill="none" stroke="#7c3aed" stroke-width="3" rx="2"/>
-            <rect x="13" y="55" width="12" height="12" fill="#7c3aed" rx="1"/>
-            <!-- Data modules -->
-            <rect x="36" y="8" width="4" height="4" fill="#7c3aed"/>
-            <rect x="42" y="8" width="4" height="4" fill="#7c3aed"/>
-            <rect x="36" y="14" width="4" height="4" fill="#7c3aed"/>
-            <rect x="36" y="36" width="4" height="4" fill="#7c3aed"/>
-            <rect x="42" y="36" width="4" height="4" fill="#7c3aed"/>
-            <rect x="48" y="36" width="4" height="4" fill="#7c3aed"/>
-            <rect x="54" y="36" width="4" height="4" fill="#7c3aed"/>
-            <rect x="60" y="36" width="4" height="4" fill="#7c3aed"/>
-            <rect x="66" y="36" width="4" height="4" fill="#7c3aed"/>
-            <rect x="36" y="42" width="4" height="4" fill="#7c3aed"/>
-            <rect x="48" y="42" width="4" height="4" fill="#7c3aed"/>
-            <rect x="60" y="42" width="4" height="4" fill="#7c3aed"/>
-            <rect x="36" y="48" width="4" height="4" fill="#7c3aed"/>
-            <rect x="42" y="48" width="4" height="4" fill="#7c3aed"/>
-            <rect x="54" y="48" width="4" height="4" fill="#7c3aed"/>
-            <rect x="66" y="48" width="4" height="4" fill="#7c3aed"/>
-            <rect x="36" y="54" width="4" height="4" fill="#7c3aed"/>
-            <rect x="48" y="54" width="4" height="4" fill="#7c3aed"/>
-            <rect x="60" y="54" width="4" height="4" fill="#7c3aed"/>
-            <rect x="36" y="60" width="4" height="4" fill="#7c3aed"/>
-            <rect x="42" y="60" width="4" height="4" fill="#7c3aed"/>
-            <rect x="48" y="60" width="4" height="4" fill="#7c3aed"/>
-            <rect x="66" y="60" width="4" height="4" fill="#7c3aed"/>
-            <rect x="36" y="66" width="4" height="4" fill="#7c3aed"/>
-            <rect x="54" y="66" width="4" height="4" fill="#7c3aed"/>
-            <rect x="60" y="66" width="4" height="4" fill="#7c3aed"/>
-            <rect x="66" y="66" width="4" height="4" fill="#7c3aed"/>
+            <rect width="80" height="80" fill="#0f131d" rx="4"/>
+            <rect x="8" y="8" width="22" height="22" fill="none" stroke="#8b5cff" stroke-width="3" rx="2"/><rect x="13" y="13" width="12" height="12" fill="#8b5cff" rx="1"/>
+            <rect x="50" y="8" width="22" height="22" fill="none" stroke="#8b5cff" stroke-width="3" rx="2"/><rect x="55" y="13" width="12" height="12" fill="#8b5cff" rx="1"/>
+            <rect x="8" y="50" width="22" height="22" fill="none" stroke="#8b5cff" stroke-width="3" rx="2"/><rect x="13" y="55" width="12" height="12" fill="#8b5cff" rx="1"/>
+            <path d="M36 8h10v10H36zM36 36h34v4H36zM36 46h4v24h-4zM48 42h4v10h-4zM54 48h4v10h-4zM60 42h10v4H60zM48 60h4v10h-4zM60 60h10v10H60z" fill="#8b5cff"/>
           </svg>
-        </div>
-        <div class="store-buttons">
-          <button class="store-btn">🍎 App Store</button>
-          <button class="store-btn">▶ Google Play</button>
         </div>
       </div>
     </aside>
-    <div class="main">
+
+    <div class="main" id="dashboard">
       <header class="header">
-  <!-- Фильтры -->
-  <div class="header__filters">
-    <div class="filter-group">
-      <span class="filter-label">Период</span>
-      <select class="filter-select">
-        <option>Сегодня</option>
-        <option>Вчера</option>
-        <option>Неделя</option>
-        <option>Месяц</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <span class="filter-label">Город</span>
-      <select class="filter-select">
-        <option>Все города</option>
-        <option>Москва</option>
-        <option>Санкт-Петербург</option>
-        <option>Казань</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <span class="filter-label">Канал продаж</span>
-      <select class="filter-select">
-        <option>Все каналы</option>
-        <option>Онлайн</option>
-        <option>Офлайн</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <span class="filter-label">Менеджер</span>
-      <select class="filter-select">
-        <option>Выберите</option>
-        <option>А. Смирнов</option>
-        <option>Е. Иванова</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <span class="filter-label">Терминал</span>
-      <select class="filter-select">
-        <option>Все терминалы</option>
-        <option>ТРМ-001</option>
-        <option>ТРМ-007</option>
-      </select>
-    </div>
-  </div>
+        <div class="header__filters" aria-label="Фильтры дашборда">
+          <div class="filter-group"><span class="filter-label">Период</span><select class="filter-select" id="periodFilter"><option value="today">Сегодня</option><option value="yesterday">Вчера</option><option value="week">Неделя</option><option value="month" selected>Текущий месяц</option><option value="prev-month">Предыдущий месяц</option><option value="all">Весь период</option></select></div>
+          <div class="filter-group"><span class="filter-label">Город</span><select class="filter-select" id="cityFilter"><option value="all">Все города</option></select></div>
+          <div class="filter-group"><span class="filter-label">Канал</span><select class="filter-select" id="channelFilter"><option value="all">Все каналы</option></select></div>
+          <div class="filter-group"><span class="filter-label">Менеджер</span><select class="filter-select" id="managerFilter"><option value="all">Все менеджеры</option></select></div>
+          <div class="filter-group"><span class="filter-label">Терминал</span><select class="filter-select" id="terminalFilter"><option value="all">Все терминалы</option></select></div>
+        </div>
+        <div class="header__actions">
+          <span class="data-status" id="dataStatus" role="status">Загрузка данных…</span>
+          <button class="btn btn--icon" id="refreshButton" type="button" title="Обновить данные">↻</button>
+          <button class="btn btn--primary" id="exportButton" type="button">Экспорт</button>
+        </div>
+      </header>
 
-  <!-- Действия -->
-  <div class="header__actions">
-    <button class="btn btn--ai">✦ AI-аналитика</button>
-    <button class="btn btn--icon">
-      🔔
-      <span class="badge badge--red" style="position:absolute;top:-6px;right:-6px;font-size:10px;min-width:18px;height:18px;">17</span>
-    </button>
-    <button class="btn btn--icon">⬇</button>
-    <button class="btn btn--primary">Экспорт</button>
-    <div class="user-profile">
-      <div class="avatar avatar--md" style="background:var(--accent-purple)">ИП</div>
-      <div class="user-info">
-        <div class="user-name">Иван Петров</div>
-        <div class="user-role">Владелец</div>
-      </div>
-    </div>
-  </div>
-</header>
       <div class="content">
-      <!-- CTA: Отчёты РОПа (daily-report.html) -->
-      <a href="daily-report.html" class="cta-banner">
-        <div class="cta-banner__icon">📋</div>
-        <div class="cta-banner__text">
-          <div class="cta-banner__title">Отчёты РОПа · <span class="cta-banner__live">LIVE</span></div>
-          <div class="cta-banner__desc">Дашборд отчётности в реальном времени — кто отчитался сегодня, кто нет, heatmap за месяц</div>
-        </div>
-        <div class="cta-banner__arrow">→</div>
-      </a>
+        <div class="dashboard-banner" id="loadError" hidden></div>
 
-        <!-- Row 1: KPI карточки -->
-        <div class="kpi-row"></div>
-
-        <!-- Row 2: Revenue Chart + Payment Chart + Activity Feed -->
-        <div class="charts-row">
-          <!-- Динамика выручки -->
-          <div class="card">
-            <div class="card__header">
-              <span class="card__title">Динамика выручки</span>
-              <span class="chart-toggle">По часам</span>
-            </div>
-            <div class="chart-wrap" style="height:220px">
-              <canvas id="revenue-chart"></canvas>
-            </div>
+        <a href="daily-report.html" class="cta-banner">
+          <div class="cta-banner__icon">📋</div>
+          <div class="cta-banner__text">
+            <div class="cta-banner__title">Отчёты РОПа</div>
+            <div class="cta-banner__desc">Отчётность по менеджерам, календарь и drill-down по дням</div>
           </div>
+          <div class="cta-banner__arrow">→</div>
+        </a>
 
-          <!-- Способы оплаты -->
-          <div class="card">
-            <div class="card__header">
-              <span class="card__title">Способы оплаты</span>
-            </div>
-            <div class="payment-chart-wrap">
-              <div class="chart-wrap" style="height:160px">
-                <canvas id="payment-chart"></canvas>
-              </div>
-              <div id="payment-legend" class="payment-legend"></div>
-            </div>
-          </div>
+        <!-- Ключевые KPI: выручка, средний чек, топ менеджер дня -->
+        <section class="kpi-row" aria-label="Ключевые показатели">
+          <article class="card kpi-card" id="kpiRevenue"></article>
+          <article class="card kpi-card" id="kpiAverage"></article>
+          <article class="card kpi-card kpi-card--manager" id="topManagerCard"></article>
+        </section>
 
-          <!-- Лента активности -->
-          <div class="card">
-            <div class="card__header">
-              <span class="card__title">Активность</span>
-            </div>
-            <div id="activity-feed" class="activity-feed"></div>
-          </div>
-        </div>
-
-        <!-- Row 3: Средний чек + Живые продажи + Оповещения -->
-        <div class="middle-row">
-          <!-- Средний чек -->
-          <div class="card">
-            <div class="card__header">
-              <span class="card__title">Средний чек</span>
-              <span class="card__value-inline">3 861 ₽ <span class="change--up">▲ +5.6%</span></span>
-            </div>
-            <div class="chart-wrap" style="height:160px">
-              <canvas id="avg-check-chart"></canvas>
-            </div>
-          </div>
-
-          <!-- Живые продажи -->
-          <div class="card">
-            <div class="card__header">
-              <span class="card__title">Живые продажи <span class="online-dot">●</span> Онлайн</span>
-            </div>
-            <table class="live-table">
-              <thead>
-                <tr>
-                  <th>Терминал</th>
-                  <th>Менеджер</th>
-                  <th>Город</th>
-                  <th>Сумма</th>
-                  <th>Оплата</th>
-                  <th>Чек</th>
-                </tr>
-              </thead>
-              <tbody id="live-table-body"></tbody>
-            </table>
-          </div>
-
-          <!-- Оповещения -->
-          <div class="card">
-            <div class="card__header">
-              <span class="card__title">Оповещения</span>
-            </div>
+        <!-- Основная аналитика -->
+        <section class="charts-row" aria-label="Основная аналитика">
+          <article class="card" id="revenue-dynamics">
+            <div class="card__header"><span class="card__title">Динамика выручки</span><span class="chart-toggle" id="chartPeriodLabel">Текущий месяц</span></div>
+            <div class="chart-wrap chart-wrap--large"><canvas id="revenue-chart"></canvas></div>
+          </article>
+          <article class="card" id="payment-methods">
+            <div class="card__header"><span class="card__title">Способы оплаты</span><span class="card__value-inline" id="paymentTotal">—</span></div>
+            <div class="payment-chart-wrap"><div class="chart-wrap chart-wrap--payment"><canvas id="payment-chart"></canvas></div><div id="payment-legend" class="payment-legend"></div></div>
+          </article>
+          <article class="card" id="alerts">
+            <div class="card__header"><span class="card__title">Оповещения</span><span class="card__value-inline" id="alertSummary">—</span></div>
             <div id="alerts-list" class="alerts-list"></div>
-          </div>
-        </div>
+          </article>
+        </section>
 
-        <!-- Row 4: Топ менеджеры + География (реальные города) + Топ продукты -->
-        <div class="bottom-row">
-          <!-- Топ менеджеры (scrollable) -->
-          <div class="card">
-            <div class="card__header">
-              <span class="card__title">Топ менеджеры</span>
-            </div>
-            <div id="top-managers-list" class="top-managers-list"></div>
-          </div>
+        <!-- Текущий средний чек, последние продажи и рейтинг -->
+        <section class="middle-row" aria-label="Операционная аналитика">
+          <article class="card" id="average-chart-card">
+            <div class="card__header"><span class="card__title">Средний чек</span><span class="card__value-inline" id="avg-check-inline">—</span></div>
+            <div class="chart-wrap chart-wrap--medium"><canvas id="avg-check-chart"></canvas></div>
+          </article>
+          <article class="card" id="recent-sales">
+            <div class="card__header"><span class="card__title">Последние продажи</span><span class="data-freshness" id="salesFreshness">—</span></div>
+            <div class="table-scroll"><table class="live-table"><thead><tr><th>Терминал</th><th>Менеджер</th><th>Город</th><th>Сумма</th><th>Оплата</th><th>Чек</th></tr></thead><tbody id="live-table-body"></tbody></table></div>
+          </article>
+          <article class="card" id="manager-rating">
+            <div class="card__header"><span class="card__title">Рейтинг менеджеров</span><select class="filter-select filter-select--small" id="ratingPeriod"><option value="today">Сегодня</option><option value="week" selected>Неделя</option><option value="month">Месяц</option><option value="all">Весь период</option></select></div>
+            <div class="rating-caption" id="ratingCaption">—</div><div id="top-managers-list" class="top-managers-list"></div>
+          </article>
+        </section>
 
-          <!-- География — реальные города из CSV -->
-          <div class="card">
-            <div class="card__header">
-              <span class="card__title">География продаж</span>
-            </div>
-            <div id="city-rankings" class="city-rankings"></div>
-          </div>
+        <!-- Дополнительные срезы -->
+        <section class="bottom-row" aria-label="Дополнительная аналитика">
+          <article class="card" id="geography"><div class="card__header"><span class="card__title">География продаж</span></div><div id="city-rankings" class="city-rankings"></div></article>
+          <article class="card" id="products"><div class="card__header"><span class="card__title">Топ продукты</span></div><div id="top-products-list" class="top-products-list"></div></article>
+          <article class="card" id="activity"><div class="card__header"><span class="card__title">Активность</span><span class="data-freshness" id="activityFreshness">—</span></div><div id="activity-feed" class="activity-feed"></div></article>
+        </section>
 
-          <!-- Топ продукты (scrollable) -->
-          <div class="card">
-            <div class="card__header">
-              <span class="card__title">Топ продукты</span>
-            </div>
-            <div id="top-products-list" class="top-products-list"></div>
-          </div>
-        </div>
+        <!-- Второстепенный KPI намеренно опущен вниз -->
+        <section class="secondary-row" aria-label="Вторичные показатели">
+          <article class="card secondary-card" id="reportsCard"></article>
+        </section>
       </div>
     </div>
   </div>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="js/data.js"></script>
   <script src="js/charts.js"></script>
   <script src="js/ui.js"></script>
+  <script>
+    (function () {
+      try {
+        var io = new IntersectionObserver(function (entries) { entries.forEach(function (entry) { if (entry.isIntersecting) { entry.target.classList.add('in'); io.unobserve(entry.target); } }); }, { threshold: 0, rootMargin: '0px 0px -40px 0px' });
+        document.querySelectorAll('.card').forEach(function (el) { io.observe(el); });
+      } catch (_) { document.querySelectorAll('.card').forEach(function (el) { el.classList.add('in'); }); }
+      var progress = document.getElementById('barProg'); var top = document.getElementById('toTop');
+      function onScroll() { var scroll = window.scrollY || document.documentElement.scrollTop; var max = document.documentElement.scrollHeight - document.documentElement.clientHeight || 1; if (progress) progress.style.width = Math.min(100, scroll / max * 100) + '%'; if (top) top.classList.toggle('show', scroll > 500); }
+      window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+      if (top) top.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    }());
+  </script>
 </body>
 </html>
