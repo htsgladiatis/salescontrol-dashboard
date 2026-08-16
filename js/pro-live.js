@@ -219,10 +219,12 @@
 
   function ensureLayout() {
     const content = $('.content'), charts = $('.row-charts'), middle = $('.row-mid'), bottom = $('.row-bot'); if (!content || !charts || !middle || !bottom) return;
-    const activity = charts.children[2], alerts = middle.children[2], manager = bottom.children[0];
-    if (activity && activity.parentElement === charts) bottom.appendChild(activity);
-    if (alerts && alerts.parentElement === middle) charts.appendChild(alerts);
-    if (manager && manager.parentElement === bottom) middle.appendChild(manager);
+    const activity = charts.querySelector('#feed')?.closest('.card') || bottom.querySelector('#feed')?.closest('.card');
+    const alerts = middle.querySelector('#alerts')?.closest('.card') || charts.querySelector('#alerts')?.closest('.card');
+    const manager = bottom.querySelector('#mgrList')?.closest('.card') || middle.querySelector('#mgrList')?.closest('.card');
+    if (activity && activity.parentElement !== bottom) bottom.appendChild(activity);
+    if (alerts && alerts.parentElement !== charts) charts.appendChild(alerts);
+    if (manager && manager.parentElement !== middle) middle.appendChild(manager);
     const managerCard = middle.children[2];
     if (managerCard && !managerCard.querySelector('.pro-period-select')) {
       const head = managerCard.querySelector('.card-h');
