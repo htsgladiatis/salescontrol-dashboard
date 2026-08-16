@@ -115,13 +115,15 @@
     const row = $('#kpiRow'); if (!row) return;
     const daily = data.buildSnapshot('today');
     const manager = daily.managers[0] || snapshot.managers[0];
-    const managerPeriod = daily.managers.length ? 'Топ менеджер дня' : 'Топ менеджер периода';
-    const series = snapshot.byDate.map(item => item.revenue);
+    const managerPeriod = daily.managers.length ? 'Топ менеджер дня' : 'Топ менеджер месяца';
+    const revenueSeries = snapshot.byDate.map(item => item.revenue);
+    const reportSeries = snapshot.byDate.map(item => item.reports);
     const averageSeries = snapshot.byDate.map(item => item.average);
     row.innerHTML = '';
     const cards = [
-      { icon: '💳', value: money(snapshot.revenue), label: 'Выручка за ' + periodLabel(state.filters.period).toLowerCase(), color: 'var(--lime)', series },
-      { icon: '📋', value: snapshot.reports ? money(snapshot.average) : '—', label: 'Средний чек за период', color: 'var(--mint)', series: averageSeries }
+      { icon: '💳', value: money(snapshot.revenue), label: 'Выручка за ' + periodLabel(state.filters.period).toLowerCase(), color: 'var(--lime)', series: revenueSeries },
+      { icon: '🛒', value: nf(snapshot.reports), label: 'Отчётов за ' + periodLabel(state.filters.period).toLowerCase(), color: 'var(--violet)', series: reportSeries },
+      { icon: '📋', value: snapshot.reports ? money(snapshot.average) : '—', label: 'Средний чек', color: 'var(--blue)', series: averageSeries }
     ];
     cards.forEach(card => {
       const node = document.createElement('div'); node.className = 'card kpi'; node.style.setProperty('--acc', card.color);
@@ -206,36 +208,17 @@
   }
 
   function renderRanks(snapshot) {
-    const managerCard = $('.row-mid .card:nth-child(3)'); if (managerCard) {
+    const managerCard = $('#mgrList')?.closest('.card'); if (managerCard) {
       const list = snapshot.managers;
-      const select = managerCard.querySelector('.pro-period-select');
-      if (select && select.value !== state.ratingPeriod) select.value = state.ratingPeriod;
       const host = managerCard.querySelector('#mgrList'); if (host) { clear(host); if (!list.length) host.innerHTML = empty('Нет данных за период'); else { const max = list[0].revenue || 1; list.forEach((manager, index) => { const item = document.createElement('div'); item.className = 'rank' + (index < 3 ? ' rank--top' : ''); const pct = Math.max(1, Math.round(manager.revenue / max * 100)); item.innerHTML = '<div class="rank-n">' + (index + 1) + '</div><div class="rank-b"><div class="rank-nm">' + e(manager.name) + ' <span class="pro-muted">' + manager.reports + '</span></div><div class="track"><div class="fill" style="width:' + pct + '%;background:' + (index === 0 ? 'var(--grad-lime)' : index < 3 ? 'var(--grad-violet)' : 'var(--blue)') + '"></div></div></div><div class="rank-v">' + money(manager.revenue) + '</div>'; host.appendChild(item); }); } }
-      const chip = managerCard.querySelector('.card-h .chip'); if (chip && !select) chip.textContent = periodLabel(state.ratingPeriod);
+      const chip = managerCard.querySelector('.card-h .chip'); if (chip) chip.textContent = periodLabel(state.ratingPeriod);
     }
     const cityHost = $('#cityList'); if (cityHost) { clear(cityHost); const max = snapshot.cities[0] ? snapshot.cities[0].revenue : 1; snapshot.cities.slice(0, 8).forEach((city, index) => { const item = document.createElement('div'); item.className = 'rank' + (index < 3 ? ' rank--top' : ''); item.style.padding = '10px 6px'; const pct = Math.max(2, Math.round(city.revenue / max * 100)); item.innerHTML = '<div class="rank-n">' + (index + 1) + '</div><div class="rank-b"><div class="rank-nm">' + e(city.name) + '</div><div class="track" style="height:8px"><div class="fill" style="width:' + pct + '%;background:' + (index === 0 ? 'var(--grad-lime)' : index === 1 ? 'var(--grad-violet)' : 'var(--blue)') + '"></div></div></div><div class="rank-v">' + compact(city.revenue) + '</div>'; cityHost.appendChild(item); }); if (!snapshot.cities.length) cityHost.innerHTML = empty('Нет данных'); }
     const productHost = $('#prodList'); if (productHost) { clear(productHost); const products = topProductRows(snapshot).slice(0, 24); const max = products[0] ? products[0].revenue : 1; if (!products.length) productHost.innerHTML = empty('Нет товарных данных'); products.forEach((product, index) => { const item = document.createElement('div'); item.className = 'rank' + (index < 3 ? ' rank--top' : ''); const pct = Math.max(1, Math.round(product.revenue / max * 100)); item.innerHTML = '<div class="rank-n">' + (index + 1) + '</div><div class="rank-b"><div class="rank-nm">' + e(product.name) + ' <span class="pro-muted">×' + product.quantity + '</span></div><div class="track"><div class="fill" style="width:' + pct + '%;background:' + (index === 0 ? 'var(--grad-lime)' : 'var(--cyan)') + '"></div></div></div><div class="rank-v">' + money(product.revenue) + '</div>'; productHost.appendChild(item); }); }
   }
 
   function ensureLayout() {
-    const content = $('.content'), charts = $('.row-charts'), middle = $('.row-mid'), bottom = $('.row-bot'); if (!content || !charts || !middle || !bottom) return;
-    const activity = charts.querySelector('#feed')?.closest('.card') || bottom.querySelector('#feed')?.closest('.card');
-    const alerts = middle.querySelector('#alerts')?.closest('.card') || charts.querySelector('#alerts')?.closest('.card');
-    const manager = bottom.querySelector('#mgrList')?.closest('.card') || middle.querySelector('#mgrList')?.closest('.card');
-    if (activity && activity.parentElement !== bottom) bottom.appendChild(activity);
-    if (alerts && alerts.parentElement !== charts) charts.appendChild(alerts);
-    if (manager && manager.parentElement !== middle) middle.appendChild(manager);
-    const managerCard = middle.children[2];
-    if (managerCard && !managerCard.querySelector('.pro-period-select')) {
-      const head = managerCard.querySelector('.card-h');
-      if (head) { head.innerHTML = '<span class="card-t">Топ менеджеры</span><select class="pro-period-select" id="ratingPeriod"><option value="today">Сегодня</option><option value="yesterday">Вчера</option><option value="week" selected>Неделя</option><option value="month">Месяц</option><option value="all">Весь период</option></select>'; }
-      const list = managerCard.querySelector('#mgrList'); if (list) list.style.maxHeight = '300px';
-    }
-    const oldReports = $('#proReports');
-    if (!oldReports) { const card = document.createElement('div'); card.id = 'proReports'; card.className = 'pro-report-card'; card.innerHTML = '<div><div class="card-t">Количество отчётов</div><div class="pro-report-card__value" id="proReportValue">—</div><div class="pro-report-card__meta" id="proReportMeta">—</div></div><select class="pro-report-card__select" id="proPeriod"><option value="today">Сегодня</option><option value="yesterday">Вчера</option><option value="week">Последние 7 дней</option><option value="month" selected>Текущий месяц</option><option value="prev-month">Предыдущий месяц</option><option value="all">Весь период</option></select>'; content.appendChild(card); }
-    const cta = content.querySelector('.cta'); if (cta && cta.parentElement === content) content.appendChild(cta);
-    const actions = $('.actions');
-    if (actions && !$('#proRefresh')) { const refresh = document.createElement('button'); refresh.id = 'proRefresh'; refresh.className = 'btn btn-gho pro-refresh'; refresh.title = 'Обновить данные'; refresh.textContent = '↻'; actions.insertBefore(refresh, actions.firstChild); refresh.addEventListener('click', async () => { await data.loadData(); render(); }); const status = document.createElement('span'); status.id = 'proDataStatus'; status.className = 'pro-status'; actions.insertBefore(status, actions.firstChild); }
+    // The Pro page is intentionally pixel-stable: live data must not move or resize its cards.
   }
 
   function bindFilters() {
@@ -270,7 +253,7 @@
   function render() {
     ensureLayout();
     const snapshot = data.buildSnapshot();
-    renderChrome(snapshot); renderKpis(snapshot); renderRevenue(snapshot); renderDonut(snapshot); renderAverage(snapshot); renderFeed(snapshot); renderSales(snapshot); renderAlerts(snapshot); renderRanks(data.buildSnapshot(state.ratingPeriod)); renderReport(snapshot);
+    renderChrome(snapshot); renderKpis(snapshot); renderRevenue(snapshot); renderDonut(snapshot); renderAverage(snapshot); renderFeed(snapshot); renderSales(snapshot); renderAlerts(snapshot); renderRanks(data.buildSnapshot(state.ratingPeriod));
     const sidebarCount = $('#sidebarManagerCount'); if (sidebarCount) sidebarCount.textContent = snapshot.managers.length + '/' + data.MASTER_MANAGERS.length;
     if (state.error && !state.loaded) { let error = $('#proFilterError'); if (!error) { error = document.createElement('div'); error.id = 'proFilterError'; error.className = 'pro-filter-error'; document.body.appendChild(error); } error.textContent = 'Не удалось загрузить данные: ' + state.error; } else { const error = $('#proFilterError'); if (error) error.remove(); }
     bindRating();
