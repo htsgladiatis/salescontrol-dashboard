@@ -526,6 +526,8 @@ dialog.cmdk::backdrop{background:rgba(0,0,0,.55)}
 .fld label{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--txt-3);white-space:nowrap}
 .fld select{min-height:36px;background:var(--surface);border-color:var(--line)}
 .fld select:focus-visible{border-color:var(--lime)}
+.fld input[type="date"],.fld input[type="month"]{min-height:36px;padding:0 10px;border-radius:var(--r-sm);border:1px solid var(--line);background-color:var(--surface);color:var(--txt);font-family:var(--mono);font-size:var(--fs-sm);cursor:pointer}
+html[data-theme="dark"] .fld input[type="date"]::-webkit-calendar-picker-indicator,html[data-theme="dark"] .fld input[type="month"]::-webkit-calendar-picker-indicator{filter:invert(.7)}
 @media(max-width:1100px){
   .topbar__in{flex-wrap:wrap}
   .topbar__spacer{display:none}
@@ -1114,7 +1116,7 @@ var state = {
   dupes: [],                // дубли (ИСКЛЮЧЕНЫ из выручки)
   items: [],
   dims: { city: [], channel: [], manager: [], terminal: [] },
-  filters: { period: 'month', city: 'all', channel: 'all', manager: 'all', terminal: 'all' },
+  filters: { period: 'month', city: 'all', channel: 'all', manager: 'all', terminal: 'all', customMonth: '', customFrom: '', customTo: '' },
   rankPeriod: 'period',
   chartMode: 'bars',
   plan: null,
@@ -1310,7 +1312,9 @@ var PERIODS = [
   { key: 'month', label: 'Текущий месяц' },
   { key: 'prev-month', label: 'Прошлый месяц' },
   { key: 'quarter', label: '90 дней' },
-  { key: 'all', label: 'Всё время' }
+  { key: 'all', label: 'Всё время' },
+  { key: 'custom-month', label: 'Произвольный месяц' },
+  { key: 'custom-range', label: 'Диапазон дат' }
 ];
 function periodRange(key) {
   var t = todayISO();
@@ -1323,6 +1327,16 @@ function periodRange(key) {
       var pm = addMonths(monthStart(t), -1);
       return { from: pm, to: monthEnd(pm), label: longDate(pm).replace(/^\d+\s/, ''), prev: { from: addMonths(pm, -1), to: monthEnd(addMonths(pm, -1)), label: 'месяцем ранее' } };
     case 'all': return { from: '0000-01-01', to: '9999-12-31', label: 'всё время', prev: null };
+    case 'custom-month':
+      var cmIso = state.filters.customMonth || todayISO().slice(0, 7);
+      var cmStart = cmIso + '-01';
+      var cmLabel = new Intl.DateTimeFormat(CONFIG.locale, { timeZone: 'UTC', month: 'long', year: 'numeric' }).format(new Date(toUTC(cmStart)));
+      return { from: cmStart, to: monthEnd(cmStart), label: cmLabel, prev: null };
+    case 'custom-range':
+      var frIso = state.filters.customFrom, toIso = state.filters.customTo;
+      if (!frIso || !toIso) { frIso = monthStart(todayISO()); toIso = todayISO(); }
+      if (frIso > toIso) { var swap = frIso; frIso = toIso; toIso = swap; }
+      return { from: frIso, to: toIso, label: 'с ' + dayLabel(frIso) + ' по ' + dayLabel(toIso), prev: null };
     default:
       var ms = monthStart(t), pms = addMonths(ms, -1);
       return {
@@ -1653,6 +1667,18 @@ function selectField(id, label, options, value, onChange) {
   f.appendChild(lb); f.appendChild(sel);
   return f;
 }
+function inputField(id, label, type, value, onChange) {
+  var f = el('div', 'fld');
+  var lb = el('label', null, label);
+  lb.setAttribute('for', id);
+  var inp = el('input');
+  inp.id = id;
+  inp.type = type;
+  inp.value = value || '';
+  inp.addEventListener('change', function () { onChange(inp.value); });
+  f.appendChild(lb); f.appendChild(inp);
+  return f;
+}
 function dimOptions(list, allLabel) {
   var out = [{ value: 'all', label: allLabel }];
   list.forEach(function (v) { out.push({ value: v, label: v }); });
@@ -1667,13 +1693,29 @@ function setFilter(key, value) {
 function renderFilters() {
   var host = $('filters');
   var f = state.filters;
-  mount(host, [
-    selectField('fPeriod', 'Период', PERIODS.map(function (p) { return { value: p.key, label: p.label }; }), f.period, function (v) { setFilter('period', v); }),
+  var children = [
+    selectField('fPeriod', 'Период', PERIODS.map(function (p) { return { value: p.key, label: p.label }; }), f.period, function (v) {
+      if (v === 'custom-month' && !state.filters.customMonth) state.filters.customMonth = todayISO().slice(0, 7);
+      if (v === 'custom-range') {
+        if (!state.filters.customFrom) state.filters.customFrom = monthStart(todayISO());
+        if (!state.filters.customTo) state.filters.customTo = todayISO();
+      }
+      setFilter('period', v);
+    })
+  ];
+  if (f.period === 'custom-month') {
+    children.push(inputField('fCustomMonth', 'Месяц', 'month', f.customMonth || todayISO().slice(0, 7), function (v) { setFilter('customMonth', v); }));
+  } else if (f.period === 'custom-range') {
+    children.push(inputField('fCustomFrom', 'С', 'date', f.customFrom || monthStart(todayISO()), function (v) { setFilter('customFrom', v); }));
+    children.push(inputField('fCustomTo', 'По', 'date', f.customTo || todayISO(), function (v) { setFilter('customTo', v); }));
+  }
+  children.push(
     selectField('fCity', 'Город', dimOptions(state.dims.city, 'Все города'), f.city, function (v) { setFilter('city', v); }),
     selectField('fChannel', 'Канал', dimOptions(state.dims.channel, 'Все каналы'), f.channel, function (v) { setFilter('channel', v); }),
     selectField('fManager', 'Менеджер', dimOptions(state.dims.manager, 'Все менеджеры'), f.manager, function (v) { setFilter('manager', v); }),
     selectField('fTerminal', 'Терминал', dimOptions(state.dims.terminal, 'Все терминалы'), f.terminal, function (v) { setFilter('terminal', v); })
-  ]);
+  );
+  mount(host, children);
 }
 
 /* ============================================================
@@ -2126,7 +2168,7 @@ function commandList() {
   state.dims.city.forEach(function (c) {
     cmds.push({ label: 'Город: ' + c, meta: 'filter', run: function () { syncSelect('fCity', c); setFilter('city', c); } });
   });
-  cmds.push({ label: 'Сбросить все фильтры', meta: 'action', run: function () { state.filters = { period: 'month', city: 'all', channel: 'all', manager: 'all', terminal: 'all' }; setFilter('period', 'month'); } });
+  cmds.push({ label: 'Сбросить все фильтры', meta: 'action', run: function () { state.filters = { period: 'month', city: 'all', channel: 'all', manager: 'all', terminal: 'all', customMonth: '', customFrom: '', customTo: '' }; setFilter('period', 'month'); } });
   cmds.push({ label: 'Обновить данные', meta: 'action', run: function () { loadData(true); } });
   cmds.push({ label: 'Экспорт выборки в CSV', meta: 'action', run: exportCsv });
   cmds.push({ label: 'Задать план месяца', meta: 'action', run: askPlan });
