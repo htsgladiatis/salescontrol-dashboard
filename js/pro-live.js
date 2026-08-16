@@ -14,21 +14,14 @@
 
   const extraStyle = document.createElement('style');
   extraStyle.textContent = `
-    .pro-period-select{font-family:var(--mono);font-size:10px;color:var(--txt-2);background:var(--panel-2);border:1px solid var(--line);border-radius:7px;padding:4px 22px 4px 7px;cursor:pointer;outline:none;max-width:112px}
-    .pro-period-select:focus{border-color:var(--lime)}
-    .pro-status{font-family:var(--mono);font-size:10px;color:var(--txt-3);white-space:nowrap}
-    .pro-status--error{color:var(--down)}
-    .pro-status--stale{color:var(--amber)}
-    .pro-refresh{cursor:pointer}
-    .pro-report-card{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 18px;background:var(--grad-hero);border:1px solid var(--line-2);border-radius:var(--r);box-shadow:var(--elev-1)}
-    .pro-report-card__value{font-family:var(--mono);font-size:25px;font-weight:700;color:var(--lime)}
-    .pro-report-card__meta{font-size:11px;color:var(--txt-2);margin-top:3px}
-    .pro-report-card__select{font-family:var(--mono);font-size:11px;color:var(--txt);background:var(--panel-2);border:1px solid var(--line-2);border-radius:8px;padding:8px 24px 8px 9px}
+    .pro-kpi-three{grid-template-columns:repeat(3,1fr)}
+    .pro-charts-two{grid-template-columns:2fr 1fr}
+    .pro-structural-row{display:grid;grid-template-columns:1.35fr .85fr;gap:14px}
+    .pro-rating-chip{cursor:pointer;user-select:none}
     .pro-empty{padding:18px 8px;text-align:center;color:var(--txt-3);font-size:12px}
-    .pro-amount{color:var(--lime)!important;font-weight:600}
     .pro-muted{color:var(--txt-3)}
     .pro-filter-error{position:fixed;right:18px;bottom:18px;z-index:100;background:var(--panel);border:1px solid var(--down);color:var(--txt);padding:11px 14px;border-radius:10px;box-shadow:var(--elev-2);font-size:12px}
-    @media(max-width:900px){.pro-report-card{align-items:flex-start;flex-direction:column}.pro-report-card__select{width:100%}}
+    @media(max-width:900px){.pro-kpi-three,.pro-charts-two,.pro-structural-row{grid-template-columns:1fr}}
   `;
   document.head.appendChild(extraStyle);
 
@@ -115,14 +108,13 @@
     const row = $('#kpiRow'); if (!row) return;
     const daily = data.buildSnapshot('today');
     const manager = daily.managers[0] || snapshot.managers[0];
-    const managerPeriod = daily.managers.length ? 'Топ менеджер дня' : 'Топ менеджер месяца';
+    const managerPeriod = daily.managers.length ? 'Топ менеджер дня' : 'Топ менеджер периода';
     const revenueSeries = snapshot.byDate.map(item => item.revenue);
-    const reportSeries = snapshot.byDate.map(item => item.reports);
     const averageSeries = snapshot.byDate.map(item => item.average);
+    row.classList.add('pro-kpi-three');
     row.innerHTML = '';
     const cards = [
       { icon: '💳', value: money(snapshot.revenue), label: 'Выручка за ' + periodLabel(state.filters.period).toLowerCase(), color: 'var(--lime)', series: revenueSeries },
-      { icon: '🛒', value: nf(snapshot.reports), label: 'Отчётов за ' + periodLabel(state.filters.period).toLowerCase(), color: 'var(--violet)', series: reportSeries },
       { icon: '📋', value: snapshot.reports ? money(snapshot.average) : '—', label: 'Средний чек', color: 'var(--blue)', series: averageSeries }
     ];
     cards.forEach(card => {
@@ -218,7 +210,43 @@
   }
 
   function ensureLayout() {
-    // The Pro page is intentionally pixel-stable: live data must not move or resize its cards.
+    const content = $('.content');
+    const kpi = $('#kpiRow');
+    const charts = $('.row-charts');
+    const bottom = $('.row-bot');
+    if (!content || !kpi || !charts || !bottom) return;
+
+    /* Structure only: checked blocks keep their original rows and card styling. */
+    if (!kpi.classList.contains('pro-kpi-three')) kpi.classList.add('pro-kpi-three');
+    charts.classList.add('pro-charts-two');
+
+    let secondary = $('#proSecondary');
+    if (!secondary) {
+      secondary = document.createElement('div');
+      secondary.id = 'proSecondary';
+      secondary.className = 'pro-structural-row';
+      content.appendChild(secondary);
+    }
+
+    const activity = charts.querySelector('#feed')?.closest('.card') || secondary.querySelector('#feed')?.closest('.card');
+    if (activity && activity.parentElement !== secondary) secondary.appendChild(activity);
+
+    if (!$('#proReports')) {
+      const report = document.createElement('div');
+      report.id = 'proReports';
+      report.className = 'card kpi';
+      report.style.setProperty('--acc', 'var(--violet)');
+      report.innerHTML = '<div class="kpi-top"><div class="kpi-ic">🛒</div><span class="kpi-dl dl-up">данные</span></div><div class="kpi-val" id="proReportValue">—</div><div class="kpi-lab" id="proReportLabel">Отчёты за период</div><div class="kpi-spark" id="proReportSpark"></div>';
+      secondary.appendChild(report);
+    }
+
+    const managerCard = $('#mgrList')?.closest('.card');
+    const ratingChip = managerCard?.querySelector('.card-h .chip');
+    if (ratingChip) {
+      ratingChip.id = 'ratingPeriod';
+      ratingChip.classList.add('pro-rating-chip');
+      ratingChip.title = 'Нажмите, чтобы сменить период рейтинга';
+    }
   }
 
   function bindFilters() {
@@ -239,21 +267,30 @@
   }
 
   function bindRating() {
-    const select = $('#ratingPeriod'); if (!select || select.dataset.bound) return;
-    select.dataset.bound = '1'; select.value = state.ratingPeriod;
-    select.onchange = event => { state.ratingPeriod = event.target.value; const snapshot = data.buildSnapshot(state.ratingPeriod); renderRanks(snapshot); };
+    const chip = $('#ratingPeriod'); if (!chip || chip.dataset.bound) return;
+    chip.dataset.bound = '1';
+    chip.onclick = () => {
+      const periods = ['today', 'yesterday', 'week', 'month', 'all'];
+      const next = (periods.indexOf(state.ratingPeriod) + 1) % periods.length;
+      state.ratingPeriod = periods[next];
+      renderRanks(data.buildSnapshot(state.ratingPeriod));
+    };
   }
 
   function renderReport(snapshot) {
-    const value = $('#proReportValue'), meta = $('#proReportMeta'), select = $('#proPeriod'); if (!value || !meta || !select) return;
-    select.value = state.filters.period; value.textContent = nf(snapshot.reports); meta.textContent = periodLabel(state.filters.period) + ' · ' + snapshot.managers.length + ' менеджеров';
-    select.onchange = event => { state.filters.period = event.target.value; const mainSelect = document.querySelector('.fld select'); if (mainSelect) mainSelect.value = state.filters.period; render(); };
+    const card = $('#proReports'); if (!card) return;
+    const value = $('#proReportValue');
+    const label = $('#proReportLabel');
+    const sparkHost = $('#proReportSpark');
+    if (value) value.textContent = nf(snapshot.reports);
+    if (label) label.textContent = 'Отчётов за ' + periodLabel(state.filters.period).toLowerCase();
+    if (sparkHost) { clear(sparkHost); sparkHost.appendChild(sparkline(snapshot.byDate.map(item => item.reports), 'var(--violet)')); }
   }
 
   function render() {
     ensureLayout();
     const snapshot = data.buildSnapshot();
-    renderChrome(snapshot); renderKpis(snapshot); renderRevenue(snapshot); renderDonut(snapshot); renderAverage(snapshot); renderFeed(snapshot); renderSales(snapshot); renderAlerts(snapshot); renderRanks(data.buildSnapshot(state.ratingPeriod));
+    renderChrome(snapshot); renderKpis(snapshot); renderRevenue(snapshot); renderDonut(snapshot); renderAverage(snapshot); renderFeed(snapshot); renderSales(snapshot); renderAlerts(snapshot); renderRanks(data.buildSnapshot(state.ratingPeriod)); renderReport(snapshot);
     const sidebarCount = $('#sidebarManagerCount'); if (sidebarCount) sidebarCount.textContent = snapshot.managers.length + '/' + data.MASTER_MANAGERS.length;
     if (state.error && !state.loaded) { let error = $('#proFilterError'); if (!error) { error = document.createElement('div'); error.id = 'proFilterError'; error.className = 'pro-filter-error'; document.body.appendChild(error); } error.textContent = 'Не удалось загрузить данные: ' + state.error; } else { const error = $('#proFilterError'); if (error) error.remove(); }
     bindRating();
