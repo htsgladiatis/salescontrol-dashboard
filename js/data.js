@@ -11,13 +11,20 @@
   };
 
   const MASTER_MANAGERS = [
-    'Аксененко Е.', 'Алейников В.', 'Битнерова С.', 'Богданчикова М.',
+    'Аксененко Е.', 'Алейников В.', 'Богданчикова М.',
     'Гаранина Н.', 'Гнездилова Е.', 'Гузеева Н.', 'Дадилова И.',
-    'Дашивец П.', 'Демиденко А.', 'Долгина М.', 'Иванова Т.',
-    'Игнатьева О.', 'Кичева В.', 'Кияева Н.', 'Котова В.',
-    'Лунга Т.', 'Нагиева Э.', 'Переверзев О.', 'Прохорова А.',
+    'Дашивец П.', 'Долгина М.', 'Иванова Т.',
+    'Кичева В.', 'Кияева Н.', 'Котова В.',
+    'Лунга Т.', 'Прохорова А.',
     'Репина Б.', 'Рупосова Ю.', 'Седова И.', 'Шевердина А.', 'Шпетная А.'
   ];
+
+  // Бывшие менеджеры (больше не работают) — их записи исключаются из всех
+  // данных дашборда: фильтр, топы, live-таблица, счётчики, сайдбар.
+  const EXCLUDED_MANAGERS = new Set([
+    'Игнатьева О.', 'Демиденко А.', 'Переверзев О.', 'Нагиева Э.', 'Битнерова С.',
+    'Арсланова Л.', 'Рябков Н.'
+  ]);
 
   const state = window.dashboardState = {
     rows: [],
@@ -243,8 +250,8 @@
       if (headerRows.length < 2) throw new Error('Google Sheets вернул пустой лист заголовков');
       const expected = ['Дата и время', 'Номер терминала', 'Менеджер'];
       expected.forEach((name, index) => { if (headerRows[0][index] !== name) throw new Error(`Изменилась схема: колонка ${index + 1}`); });
-      state.rows = headerRows.slice(1).map(normalizeHeaderRow).filter(row => row.dateISO && row.manager);
-      state.items = itemRows.slice(1).map(normalizeItemRow).filter(item => item.txid && item.product);
+      state.rows = headerRows.slice(1).map(normalizeHeaderRow).filter(row => row.dateISO && row.manager && !EXCLUDED_MANAGERS.has(row.manager));
+      state.items = itemRows.slice(1).map(normalizeItemRow).filter(item => item.txid && item.product && !EXCLUDED_MANAGERS.has(item.manager));
       state.loaded = true;
       state.error = null;
       state.lastFetchAt = Date.now();
