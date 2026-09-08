@@ -793,7 +793,6 @@ a.nav__item{text-decoration:none}
           <div class="view-toggle" id="view-toggle" role="tablist" aria-label="Период отчёта">
             <button class="active" type="button" role="tab" aria-selected="true" data-view="daily">День</button>
             <button type="button" role="tab" aria-selected="false" data-view="month">Месяц</button>
-            <button type="button" role="tab" aria-selected="false" data-view="plan">План</button>
           </div>
           <label class="header__filter" id="date-picker-wrap">📅 <input type="date" id="report-date" /></label>
           <label class="header__filter" id="month-picker-wrap" style="display:none">🗓 <input type="month" id="report-month" /></label>
@@ -824,11 +823,11 @@ a.nav__item{text-decoration:none}
             </span>
             <span class="report-home__action">Открыть B2B →</span>
           </button>
-          <button class="report-home__card" type="button" data-home-view="plan">
-            <span class="report-home__num">3 · ГРАФИК</span>
+          <button class="report-home__card" type="button" data-home-view="month">
+            <span class="report-home__num">3 · ПЛАН</span>
             <span class="report-home__title">План менеджеров</span>
-            <span class="report-home__text">Календарь смен по менеджерам и санаториям. Можно менять в тесте.</span>
-            <span class="report-home__action">Открыть план →</span>
+            <span class="report-home__text">Оранжевый — запланировано, зелёный — отработано, красный — прогул. Клик по ячейке меняет статус.</span>
+            <span class="report-home__action">Открыть месяц →</span>
           </button>
         </section>
 
@@ -929,20 +928,6 @@ a.nav__item{text-decoration:none}
             <article class="card"><div class="report-table__header"><div class="report-table__title">Смены санатория</div><span class="report-table__hint" id="b2b-source">локальный JSON</span></div><div class="b2b-table-wrap" id="b2b-table-host"></div></article>
             <article class="card"><div class="report-table__header"><div class="report-table__title">По санаториям</div></div><div id="b2b-sanatorium-host"></div></article>
           </div>
-        </section>
-
-        <section id="view-plan" style="display:none">
-          <div class="report-table__header"><div><div class="report-table__title">План по графику менеджеров</div><div class="report-table__hint">Интерактивная тестовая матрица: изменения сохраняются только в этом браузере</div></div><span class="b2b-test-badge">● LOCAL STORAGE</span></div>
-          <article class="card">
-            <div class="plan-toolbar">
-              <label class="plan-field">Менеджер<select id="plan-manager"></select></label>
-              <label class="plan-field">Санаторий<select id="plan-sanatorium"></select></label>
-              <label class="plan-field">Месяц<input class="header__filter" type="month" id="plan-month" /></label>
-              <button class="btn btn--quiet" id="plan-reset" type="button">Сбросить тестовый план</button>
-            </div>
-            <p class="plan-hint">Выберите менеджера и санаторий, затем кликните рабочий день. Повторный клик снимает назначение.</p>
-            <div class="plan-grid-wrap" id="plan-grid-host"></div>
-          </article>
         </section>
 
         <div class="actions-row">
@@ -1051,7 +1036,11 @@ function writeB2BPlan() {
 }
 function planKey(date, manager) { return date + '|' + manager; }
 function plannedShift(date, manager) {
-  return b2bState.plan.find(x => x.date === date && x.manager === manager) || null;
+  const custom = b2bState.plan.find(x => x.date === date && x.manager === manager);
+  if (custom) return custom;
+  const base = (b2bState.data && (b2bState.data.shifts || b2bState.data.schedule) || []).find(x => x.date === date && x.manager === manager);
+  if (base) return { ...base, status: base.status || 'planned' };
+  return null;
 }
 function b2bManagers() {
   const names = new Set((state.allManagers || []).concat((b2bState.data && b2bState.data.schedule || []).map(x => x.manager)));
@@ -1571,6 +1560,9 @@ function renderMonth() {
 function clickHeatmapCell(dateIso, manager) {
   const planItem = plannedShift ? plannedShift(dateIso, manager) : null;
   if (planItem) {
+    if (!b2bState.plan.find(x => x.date === dateIso && x.manager === manager)) {
+      b2bState.plan.push({ date: dateIso, manager, sanatorium: planItem.sanatorium || '', status: 'cancelled' });
+    }
     const next = planItem.status === 'planned' ? 'completed'
       : planItem.status === 'completed' ? 'cancelled'
       : 'planned';
@@ -1594,10 +1586,9 @@ function switchView(view) {
   document.getElementById('view-daily').style.display = view === 'daily' ? '' : 'none';
   document.getElementById('view-month').style.display = view === 'month' ? '' : 'none';
   document.getElementById('view-b2b').style.display = view === 'b2b' ? '' : 'none';
-  document.getElementById('view-plan').style.display = view === 'plan' ? '' : 'none';
   document.getElementById('date-picker-wrap').style.display = view === 'daily' ? '' : 'none';
   document.getElementById('month-picker-wrap').style.display = view === 'month' ? '' : 'none';
-  if (view === 'daily') renderDaily(); else if (view === 'month') renderMonth(); else if (view === 'b2b') renderB2B(); else renderPlan();
+  if (view === 'daily') renderDaily(); else if (view === 'month') renderMonth(); else renderB2B();
 }
 
 function formatRub(v) { return Math.round(v).toLocaleString('ru-RU') + ' ₽'; }
