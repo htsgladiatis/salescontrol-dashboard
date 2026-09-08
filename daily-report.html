@@ -610,6 +610,9 @@ a.nav__item{text-decoration:none}
 .heatmap__cell--weekend{background:var(--surface-3);color:var(--txt-3)}
 .heatmap__cell--inactive{background:var(--surface-2);color:var(--txt-3)}
 .heatmap__cell--reported{background:var(--pos);color:#0b0f08;font-weight:700}
+.heatmap__cell--plan{background:var(--warn);color:#171307;font-weight:600}
+.heatmap__cell--plan-done{background:var(--pos);color:#0b0f08;font-weight:700}
+.heatmap__cell--plan-missed{background:var(--neg);color:#fff;font-weight:700}
 .heatmap__cell[role="button"]{cursor:pointer;transition:transform .16s var(--ease),border-color .16s var(--ease)}
 .heatmap__cell[role="button"]:hover,.heatmap__cell[role="button"]:focus-visible{transform:translateY(-2px);border:1px solid var(--lime);outline:none}
 .heatmap-legend{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:var(--sp-3);font-size:var(--fs-xs);color:var(--txt-3)}
@@ -1509,8 +1512,14 @@ function renderMonth() {
       let cls = 'heatmap__cell';
       let status = 'Нет активности';
       let content = '';
-      const clickable = !isWeekend && !isFuture;
-      if (hasReport) { cls += ' heatmap__cell--reported'; status = 'Активность есть'; content = '✓'; }
+      const planItem = plannedShift && b2bState.loaded ? plannedShift(iso, m) : null;
+      const clickable = !!planItem || (!isWeekend && !isFuture);
+      if (planItem && planItem.status !== 'cancelled') {
+        const planDone = planItem.status === 'completed';
+        if (planDone || hasReport) { cls += ' heatmap__cell--plan-done'; status = planDone ? 'План отработан' : 'Активность есть + план'; content = '✓'; }
+        else if (!isFuture) { cls += ' heatmap__cell--plan-missed'; status = 'План без отчёта'; content = '✗'; }
+        else { cls += ' heatmap__cell--plan'; status = 'Запланировано'; content = '◉'; }
+      } else if (hasReport) { cls += ' heatmap__cell--reported'; status = 'Активность есть'; content = '✓'; }
       else if (isWeekend) { cls += ' heatmap__cell--weekend'; status = 'Выходной'; content = '·'; }
       else if (isFuture) { cls += ' heatmap__cell--inactive'; status = 'Будущая дата'; content = '·'; }
       const attrs = ` data-heatmap-date="${esc(iso)}" data-heatmap-manager="${esc(m)}" data-heatmap-status="${esc(status)}" aria-label="${esc(m + ', ' + formatDateHuman(iso) + ': ' + status)}"` +
@@ -1545,18 +1554,29 @@ function renderMonth() {
   };
   const hideTip = () => { if (tip) tip.dataset.on = '0'; };
   host.querySelectorAll('[data-heatmap-date]').forEach(cell => {
+    const mgr = cell.dataset.heatmapManager;
     cell.addEventListener('mouseenter', () => showTip(cell));
     cell.addEventListener('mouseleave', hideTip);
     cell.addEventListener('focus', () => showTip(cell));
     cell.addEventListener('blur', hideTip);
+    cell.addEventListener('click', () => { if (cell.getAttribute('role') === 'button') clickHeatmapCell(cell.dataset.heatmapDate, mgr); });
     cell.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); if (cell.getAttribute('role') === 'button') clickHeatmapCell(cell.dataset.heatmapDate); }
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); if (cell.getAttribute('role') === 'button') clickHeatmapCell(cell.dataset.heatmapDate, mgr); }
     });
   });
   renderTicker();
 }
 
-function clickHeatmapCell(dateIso) {
+function clickHeatmapCell(dateIso, manager) {
+  const planItem = b2bState.loaded ? plannedShift(dateIso, manager) : null;
+  if (planItem) {
+    const next = planItem.status === 'planned' ? 'completed'
+      : planItem.status === 'completed' ? 'cancelled'
+      : 'planned';
+    b2bState.plan = b2bState.plan.map(x => x.date === dateIso && x.manager === manager ? { ...x, status: next } : x);
+    writeB2BPlan(); renderMonth(); renderB2B(); renderPlan();
+    return;
+  }
   state.currentDate = dateIso;
   document.getElementById('report-date').value = dateIso;
   switchView('daily');
