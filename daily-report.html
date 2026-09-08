@@ -1067,12 +1067,8 @@ async function loadB2B() {
     b2bState.month = b2bState.data.month || b2bState.month;
     b2bState.loaded = true;
     b2bState.error = null;
-    const b2bMonth = document.getElementById('b2b-month');
-    const planMonth = document.getElementById('plan-month');
-    if (b2bMonth) b2bMonth.value = b2bState.month;
-    if (planMonth) planMonth.value = b2bState.month;
+    if (state.currentView === 'month') renderMonth();
     renderB2B();
-    renderPlan();
   } catch (e) {
     b2bState.error = e.message || 'Не удалось загрузить локальные B2B-данные';
     const source = document.getElementById('b2b-source');
@@ -1651,7 +1647,7 @@ async function refreshData(isBackground = false) {
     document.getElementById('pending-tbody').innerHTML = '<tr><td colspan="3" class="skeleton" style="height:60px">&nbsp;</td></tr>';
   }
   await fetchGoogleSheets(isBackground);
-  if (state.currentView === 'month') renderMonth(); else if (state.currentView === 'b2b') renderB2B(); else if (state.currentView === 'plan') renderPlan(); else renderDaily();
+  if (state.currentView === 'month') renderMonth(); else if (state.currentView === 'b2b') renderB2B(); else renderDaily();
   if (!state.loadError && !isBackground) {
     showToast('🔄 Данные обновлены (' + monthAggregates(state.currentMonth).total + ' отчётов в периоде)');
   }
@@ -1733,11 +1729,7 @@ function init() {
     state.currentMonth = e.target.value;
     if (state.loaded) { if (state.currentView === 'month') renderMonth(); else renderDaily(); }
   });
-  document.getElementById('b2b-month').addEventListener('change', (e) => { b2bState.month = e.target.value; renderB2B(); renderPlan(); });
-  document.getElementById('plan-month').addEventListener('change', (e) => { b2bState.month = e.target.value; renderPlan(); renderB2B(); });
-  document.getElementById('plan-manager').addEventListener('change', renderPlan);
-  document.getElementById('plan-sanatorium').addEventListener('change', renderPlan);
-  document.getElementById('plan-reset').addEventListener('click', () => { b2bState.plan = []; writeB2BPlan(); renderPlan(); showToast('Тестовый план очищен'); });
+  document.getElementById('b2b-month').addEventListener('change', (e) => { b2bState.month = e.target.value; renderB2B(); });
   document.querySelectorAll('#view-toggle button').forEach(btn => {
     btn.addEventListener('click', () => switchView(btn.dataset.view));
   });
