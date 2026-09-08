@@ -1890,13 +1890,16 @@ function renderAvgChart(snap) {
    16. СТРУКТУРА ОПЛАТ — горизонтальный stacked bar вместо доната
    ============================================================ */
 function renderPayments(snap) {
+  // Инкассация — движение денег, а не выручка и не способ оплаты.
+  // Поэтому она показывается отдельно, а контрольная сумма способов оплаты
+  // считается только по наличным + безналичным + кредиту.
   var parts = [
     { name: 'Безналичные', value: snap.cashless, color: 'var(--c1)' },
     { name: 'Наличные', value: snap.cash, color: 'var(--c3)' },
-    { name: 'Инкассация', value: snap.encash, color: 'var(--c2)' },
     { name: 'Кредит / рассрочка', value: snap.credit, color: 'var(--c4)' }
   ].filter(function (p) { return p.value > 0; });
   var total = parts.reduce(function (a, p) { return a + p.value; }, 0);
+  var encashment = snap.encash || 0;
   var stack = $('payStack'), legend = $('payLegend');
   clear(stack);
   if (!total) {
@@ -1906,8 +1909,9 @@ function renderPayments(snap) {
     return;
   }
   var diff = snap.revenue - total;
-  $('paySub').textContent = 'сумма по типам: ' + moneyShort(total) +
-    (Math.abs(diff) > 1 ? ' · расхождение с итогом ' + moneyShort(diff) : ' · сходится с итогом');
+  $('paySub').textContent = 'сумма способов оплаты: ' + moneyShort(total) +
+    (Math.abs(diff) > 1 ? ' · расхождение с итогом ' + moneyShort(diff) : ' · сходится 1:1') +
+    (encashment > 0 ? ' · инкассация отдельно: ' + moneyShort(encashment) : '');
   parts.forEach(function (p) {
     var seg = el('div', 'stack__seg');
     seg.style.width = (p.value / total * 100) + '%';
@@ -1915,7 +1919,7 @@ function renderPayments(snap) {
     stack.appendChild(seg);
   });
   stack.setAttribute('aria-label', 'Структура оплат: ' + parts.map(function (p) { return p.name + ' ' + pct(p.value / total); }).join(', '));
-  mount(legend, parts.map(function (p) {
+  var legendRows = parts.map(function (p) {
     var row = el('div', 'legend__row');
     var dot = el('span', 'legend__dot');
     dot.style.background = p.color;
@@ -1924,9 +1928,19 @@ function renderPayments(snap) {
     row.appendChild(el('span', 'legend__pct num', pct(p.value / total)));
     row.appendChild(el('span', 'legend__val', money(p.value)));
     return row;
-  }));
-  mount($('tblPay'), [buildTable('Структура оплат', ['Тип', 'Сумма', 'Доля'],
-    parts.map(function (p) { return [p.name, money(p.value), pct(p.value / total)]; }), ['name', 'amt', 'amt'])]);
+  });
+  if (encashment > 0) {
+    var encRow = el('div', 'legend__row');
+    var encDot = el('span', 'legend__dot'); encDot.style.background = 'var(--c2)'; encRow.appendChild(encDot);
+    encRow.appendChild(el('span', 'legend__label', 'Инкассация · вне выручки'));
+    encRow.appendChild(el('span', 'legend__pct num', '—'));
+    encRow.appendChild(el('span', 'legend__val', money(encashment)));
+    legendRows.push(encRow);
+  }
+  mount(legend, legendRows);
+  var paymentRows = parts.map(function (p) { return [p.name, money(p.value), pct(p.value / total)]; });
+  if (encashment > 0) paymentRows.push(['Инкассация · вне выручки', money(encashment), 'не входит 1:1']);
+  mount($('tblPay'), [buildTable('Структура оплат', ['Тип', 'Сумма', 'Доля'], paymentRows, ['name', 'amt', 'amt'])]);
 }
 
 /* ============================================================
@@ -2453,7 +2467,7 @@ function renderTicker(snap, prev) {
     items.push(['ВЫРУЧКА', moneyShort(snap.revenue), prev ? deltaOf(snap.revenue, prev.revenue) : null]);
     items.push(['ОТЧЁТОВ', int(snap.count), prev ? deltaOf(snap.count, prev.count) : null]);
     items.push(['СРЕДНИЙ ЧЕК', money(snap.avg), prev ? deltaOf(snap.avg, prev.avg) : null]);
-    var payTotal = snap.cash + snap.cashless + snap.credit + snap.encash;
+    var payTotal = snap.cash + snap.cashless + snap.credit;
     if (payTotal > 0) items.push(['БЕЗНАЛ', pct(snap.cashless / payTotal), null]);
     if (snap.managers.length) items.push([snap.managers[0].name.toUpperCase(), moneyShort(snap.managers[0].revenue), null]);
     if (snap.cities.length) items.push([snap.cities[0].name.toUpperCase(), moneyShort(snap.cities[0].revenue), null]);

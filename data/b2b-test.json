@@ -1,0 +1,35 @@
+{
+  "testMode": true,
+  "source": "local test fixture",
+  "month": "2026-08",
+  "updatedAt": "2026-09-08T10:00:00+03:00",
+  "sanatoria": ["Сочи Парк", "Ривьера", "Заполярье", "Белокуриха"],
+  "shifts": [
+    {"id":"b2b-001","date":"2026-08-01","manager":"Аксененко Е.","sanatorium":"Сочи Парк","rentedPlaces":24,"paidPlaces":20,"freePlaces":4,"status":"completed","note":"Заезд группы"},
+    {"id":"b2b-002","date":"2026-08-02","manager":"Алейников В.","sanatorium":"Ривьера","rentedPlaces":18,"paidPlaces":15,"freePlaces":3,"status":"completed","note":"Продление смены"},
+    {"id":"b2b-003","date":"2026-08-04","manager":"Богданчикова М.","sanatorium":"Заполярье","rentedPlaces":30,"paidPlaces":27,"freePlaces":3,"status":"completed","note":"Корпоративный заезд"},
+    {"id":"b2b-004","date":"2026-08-06","manager":"Гаранина Н.","sanatorium":"Сочи Парк","rentedPlaces":22,"paidPlaces":18,"freePlaces":4,"status":"completed","note":"Основная смена"},
+    {"id":"b2b-005","date":"2026-08-09","manager":"Гнездилова Е.","sanatorium":"Белокуриха","rentedPlaces":16,"paidPlaces":16,"freePlaces":0,"status":"completed","note":"Полная загрузка"},
+    {"id":"b2b-006","date":"2026-08-11","manager":"Гузеева Н.","sanatorium":"Ривьера","rentedPlaces":20,"paidPlaces":14,"freePlaces":6,"status":"completed","note":"Есть свободные места"},
+    {"id":"b2b-007","date":"2026-08-14","manager":"Дадилова И.","sanatorium":"Заполярье","rentedPlaces":26,"paidPlaces":23,"freePlaces":3,"status":"completed","note":"Заезд группы"},
+    {"id":"b2b-008","date":"2026-08-17","manager":"Дашивец П.","sanatorium":"Сочи Парк","rentedPlaces":28,"paidPlaces":25,"freePlaces":3,"status":"completed","note":"Основная смена"},
+    {"id":"b2b-009","date":"2026-08-20","manager":"Долгина М.","sanatorium":"Белокуриха","rentedPlaces":14,"paidPlaces":11,"freePlaces":3,"status":"completed","note":"Новая группа"},
+    {"id":"b2b-010","date":"2026-08-23","manager":"Иванова Т.","sanatorium":"Ривьера","rentedPlaces":19,"paidPlaces":17,"freePlaces":2,"status":"completed","note":"Продление смены"},
+    {"id":"b2b-011","date":"2026-08-26","manager":"Кичева В.","sanatorium":"Заполярье","rentedPlaces":32,"paidPlaces":28,"freePlaces":4,"status":"completed","note":"Корпоративный заезд"},
+    {"id":"b2b-012","date":"2026-08-29","manager":"Репина Б.","sanatorium":"Сочи Парк","rentedPlaces":25,"paidPlaces":22,"freePlaces":3,"status":"completed","note":"Финальная смена месяца"}
+  ],
+  "schedule": [
+    {"date":"2026-08-01","manager":"Аксененко Е.","sanatorium":"Сочи Парк","status":"completed"},
+    {"date":"2026-08-02","manager":"Алейников В.","sanatorium":"Ривьера","status":"completed"},
+    {"date":"2026-08-04","manager":"Богданчикова М.","sanatorium":"Заполярье","status":"completed"},
+    {"date":"2026-08-06","manager":"Гаранина Н.","sanatorium":"Сочи Парк","status":"completed"},
+    {"date":"2026-08-09","manager":"Гнездилова Е.","sanatorium":"Белокуриха","status":"completed"},
+    {"date":"2026-08-11","manager":"Гузеева Н.","sanatorium":"Ривьера","status":"completed"},
+    {"date":"2026-08-14","manager":"Дадилова И.","sanatorium":"Заполярье","status":"completed"},
+    {"date":"2026-08-17","manager":"Дашивец П.","sanatorium":"Сочи Парк","status":"completed"},
+    {"date":"2026-08-20","manager":"Долгина М.","sanatorium":"Белокуриха","status":"completed"},
+    {"date":"2026-08-23","manager":"Иванова Т.","sanatorium":"Ривьера","status":"completed"},
+    {"date":"2026-08-26","manager":"Кичева В.","sanatorium":"Заполярье","status":"completed"},
+    {"date":"2026-08-29","manager":"Репина Б.","sanatorium":"Сочи Парк","status":"completed"}
+  ]
+}

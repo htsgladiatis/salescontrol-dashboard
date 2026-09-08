@@ -613,6 +613,36 @@ a.nav__item{text-decoration:none}
 .actions-row{display:flex;gap:var(--sp-3);padding:var(--sp-2) 0;flex-wrap:wrap}
 .empty-state{padding:22px 8px;text-align:center;color:var(--txt-3);font-size:var(--fs-sm)}
 
+.report-home{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-4);margin:var(--sp-4) 0 var(--sp-6)}
+.report-home__card{display:flex;flex-direction:column;gap:8px;text-align:left;padding:18px;border:1px solid var(--line-strong);border-radius:var(--r);background:var(--surface);color:var(--txt);cursor:pointer;transition:transform .2s var(--ease),border-color .2s var(--ease),background .2s var(--ease)}
+.report-home__card:hover{transform:translateY(-3px);border-color:var(--lime);background:var(--surface-2)}
+.report-home__num{font-family:var(--mono);font-size:12px;color:var(--lime);font-weight:700}
+.report-home__title{font-size:18px;font-weight:700}
+.report-home__text{font-size:13px;color:var(--txt-3);line-height:1.45}
+.report-home__action{margin-top:auto;color:var(--lime);font-size:12px;font-weight:600}
+@media(max-width:820px){.report-home{grid-template-columns:1fr}}
+
+.b2b-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-4);margin-bottom:var(--sp-4)}
+.b2b-kpi{min-width:0}
+.b2b-kpi .kpi__value{font-size:clamp(22px,2.5vw,32px)}
+.b2b-kpi__meta{font-size:var(--fs-xs);color:var(--txt-3);margin-top:4px}
+.b2b-layout{display:grid;grid-template-columns:1.2fr .8fr;gap:var(--sp-4)}
+.b2b-table-wrap{overflow:auto}
+.b2b-table{width:100%;border-collapse:collapse;min-width:720px;font-size:var(--fs-sm)}
+.b2b-table th{text-align:left;color:var(--txt-3);font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.04em;padding:9px 8px;border-bottom:1px solid var(--line)}
+.b2b-table td{padding:10px 8px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:var(--fs-xs)}
+.b2b-table td:first-child,.b2b-table td:nth-child(2){font-family:var(--sans);color:var(--txt)}
+.b2b-table td.amt{text-align:right;font-weight:600;color:var(--txt)}
+.b2b-occupancy{min-width:110px}.b2b-occupancy__bar{height:7px;background:var(--surface-3);border-radius:8px;overflow:hidden;margin-bottom:4px}.b2b-occupancy__fill{height:100%;background:var(--grad-lime);border-radius:8px}.b2b-occupancy__text{color:var(--lime);font-size:11px}
+.b2b-test-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;background:var(--warn-soft);color:var(--warn);font-size:var(--fs-xs);font-weight:600}
+.plan-toolbar{display:flex;align-items:end;gap:var(--sp-3);flex-wrap:wrap;margin-bottom:var(--sp-4)}
+.plan-field{display:flex;flex-direction:column;gap:5px;color:var(--txt-3);font-size:var(--fs-xs)}
+.plan-field select{min-height:36px;padding:0 10px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--txt);font:inherit}
+.plan-hint{color:var(--txt-3);font-size:var(--fs-xs);margin:0 0 var(--sp-3)}
+.plan-grid-wrap{overflow:auto}.plan-grid{display:grid;grid-template-columns:220px repeat(31,32px);gap:2px;width:max-content;min-width:100%;font-size:11px}.plan-cell{height:34px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:var(--surface-2);color:var(--txt-3);border:1px solid transparent;cursor:pointer}.plan-cell--head{background:var(--surface-2);border-color:var(--line);cursor:default}.plan-cell--name{justify-content:flex-start;padding:0 10px;gap:8px;background:transparent;color:var(--txt);cursor:default;font-size:var(--fs-sm)}.plan-cell--weekend{background:var(--violet-soft);cursor:default}.plan-cell--planned{background:var(--warn);color:#171307;font-weight:700}.plan-cell--completed{background:var(--pos);color:#0b0f08;font-weight:700}.plan-cell:hover:not(.plan-cell--head):not(.plan-cell--name):not(.plan-cell--weekend){border-color:var(--lime)}
+@media(max-width:1024px){.b2b-layout{grid-template-columns:1fr}.b2b-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:720px){.b2b-grid{grid-template-columns:1fr}}
+
 .view-toggle{display:flex;gap:4px;padding:3px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
 .view-toggle button{min-height:30px;padding:0 12px;font-size:var(--fs-xs);font-weight:500;border-radius:7px;background:none;border:0;color:var(--txt-2);cursor:pointer;font-family:inherit}
 .view-toggle button:hover{color:var(--txt)}
@@ -740,6 +770,8 @@ a.nav__item{text-decoration:none}
           <div class="view-toggle" id="view-toggle" role="group" aria-label="Режим просмотра">
             <button class="active" data-view="daily">День</button>
             <button data-view="month">Месяц</button>
+            <button data-view="b2b">B2B</button>
+            <button data-view="plan">План</button>
           </div>
           <label class="header__filter" id="date-picker-wrap">📅 <input type="date" id="report-date" /></label>
           <label class="header__filter" id="month-picker-wrap" style="display:none">🗓 <input type="month" id="report-month" /></label>
@@ -752,6 +784,27 @@ a.nav__item{text-decoration:none}
 
       <main id="main">
         <h1 class="vh">Отчёты РОПа</h1>
+
+        <section class="report-home" aria-label="Выбор отчёта">
+          <button class="report-home__card" type="button" data-home-view="daily">
+            <span class="report-home__num">1 · КАЖДЫЙ ДЕНЬ</span>
+            <span class="report-home__title">Отчёт РОПа</span>
+            <span class="report-home__text">Кто отчитался сегодня, кто не отчитался и кто под риском.</span>
+            <span class="report-home__action">Открыть отчёт →</span>
+          </button>
+          <button class="report-home__card" type="button" data-home-view="b2b">
+            <span class="report-home__num">2 · B2B</span>
+            <span class="report-home__title">B2B санатории</span>
+            <span class="report-home__text">Смены, арендованные места, оплаченные места и заполненность.</span>
+            <span class="report-home__action">Открыть B2B →</span>
+          </button>
+          <button class="report-home__card" type="button" data-home-view="plan">
+            <span class="report-home__num">3 · ГРАФИК</span>
+            <span class="report-home__title">План менеджеров</span>
+            <span class="report-home__text">Календарь смен по менеджерам и санаториям. Можно менять в тесте.</span>
+            <span class="report-home__action">Открыть план →</span>
+          </button>
+        </section>
 
         <section class="grid grid--kpi4" aria-label="Сводка отчётности">
           <article class="card card--kpi" style="--acc:var(--pos)">
@@ -825,6 +878,38 @@ a.nav__item{text-decoration:none}
               <span class="report-table__hint">кликни по ячейке, чтобы открыть день</span>
             </div>
             <div id="heatmap-host" class="heatmap-wrap"></div>
+          </article>
+        </section>
+
+        <section id="view-b2b" style="display:none">
+          <div class="report-table__header" style="margin-bottom:var(--sp-4)">
+            <div><div class="report-table__title">B2B · выработка смен санатория</div><div class="report-table__hint">Заполненность оплаченных арендованных мест</div></div>
+            <span class="b2b-test-badge">● ТЕСТОВЫЕ ДАННЫЕ · не production</span>
+          </div>
+          <div class="filterbar" style="margin-bottom:var(--sp-4)"><span class="filterbar__lb">Месяц B2B</span><label class="header__filter">🗓 <input type="month" id="b2b-month" /></label></div>
+          <div class="b2b-grid">
+            <article class="card b2b-kpi" style="--acc:var(--lime)"><span class="kpi__label">Арендовано мест</span><div class="kpi__value num" id="b2b-rented">—</div><div class="b2b-kpi__meta">по выбранному месяцу</div></article>
+            <article class="card b2b-kpi" style="--acc:var(--pos)"><span class="kpi__label">Оплачено мест</span><div class="kpi__value num" id="b2b-paid">—</div><div class="b2b-kpi__meta">подтверждённые места</div></article>
+            <article class="card b2b-kpi" style="--acc:var(--warn)"><span class="kpi__label">Свободно мест</span><div class="kpi__value num" id="b2b-free">—</div><div class="b2b-kpi__meta">арендовано − оплачено</div></article>
+            <article class="card b2b-kpi" style="--acc:var(--c4)"><span class="kpi__label">Заполненность</span><div class="kpi__value num" id="b2b-occupancy">—</div><div class="b2b-kpi__meta" id="b2b-shift-count">— смен</div></article>
+          </div>
+          <div class="b2b-layout">
+            <article class="card"><div class="report-table__header"><div class="report-table__title">Смены санатория</div><span class="report-table__hint" id="b2b-source">локальный JSON</span></div><div class="b2b-table-wrap" id="b2b-table-host"></div></article>
+            <article class="card"><div class="report-table__header"><div class="report-table__title">По санаториям</div></div><div id="b2b-sanatorium-host"></div></article>
+          </div>
+        </section>
+
+        <section id="view-plan" style="display:none">
+          <div class="report-table__header"><div><div class="report-table__title">План по графику менеджеров</div><div class="report-table__hint">Интерактивная тестовая матрица: изменения сохраняются только в этом браузере</div></div><span class="b2b-test-badge">● LOCAL STORAGE</span></div>
+          <article class="card">
+            <div class="plan-toolbar">
+              <label class="plan-field">Менеджер<select id="plan-manager"></select></label>
+              <label class="plan-field">Санаторий<select id="plan-sanatorium"></select></label>
+              <label class="plan-field">Месяц<input class="header__filter" type="month" id="plan-month" /></label>
+              <button class="btn btn--quiet" id="plan-reset" type="button">Сбросить тестовый план</button>
+            </div>
+            <p class="plan-hint">Выберите менеджера и санаторий, затем кликните рабочий день. Повторный клик снимает назначение.</p>
+            <div class="plan-grid-wrap" id="plan-grid-host"></div>
           </article>
         </section>
 
@@ -918,6 +1003,53 @@ const state = {
   lastNewRecordToastTs: 0,
   NEW_TOAST_MIN_INTERVAL_MS: 30000,
 };
+
+const B2B_STORAGE_KEY = 'salescontrol-b2b-plan-v1';
+const b2bState = { data: null, loaded: false, error: null, month: '2026-08', plan: [] };
+
+function readB2BPlan() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(B2B_STORAGE_KEY) || 'null');
+    if (Array.isArray(saved)) b2bState.plan = saved;
+  } catch (e) { b2bState.plan = []; }
+}
+function writeB2BPlan() {
+  try { localStorage.setItem(B2B_STORAGE_KEY, JSON.stringify(b2bState.plan)); } catch (e) {}
+}
+function planKey(date, manager) { return date + '|' + manager; }
+function plannedShift(date, manager) {
+  return b2bState.plan.find(x => x.date === date && x.manager === manager) || null;
+}
+function b2bManagers() {
+  const names = new Set((state.allManagers || []).concat((b2bState.data && b2bState.data.schedule || []).map(x => x.manager)));
+  return Array.from(names).filter(Boolean).sort((a, b) => a.localeCompare(b, 'ru'));
+}
+function b2bMonthRows(month) {
+  const rows = (b2bState.data && b2bState.data.shifts || []).filter(x => x.date.startsWith(month + '-'));
+  const planned = b2bState.plan.filter(x => x.date.startsWith(month + '-')).map(x => ({ ...x, planned: true, rentedPlaces: 0, paidPlaces: 0, freePlaces: 0 }));
+  return rows.concat(planned);
+}
+async function loadB2B() {
+  readB2BPlan();
+  try {
+    const response = await fetch('data/b2b-test.json', { cache: 'no-store' });
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    b2bState.data = await response.json();
+    b2bState.month = b2bState.data.month || b2bState.month;
+    b2bState.loaded = true;
+    b2bState.error = null;
+    const b2bMonth = document.getElementById('b2b-month');
+    const planMonth = document.getElementById('plan-month');
+    if (b2bMonth) b2bMonth.value = b2bState.month;
+    if (planMonth) planMonth.value = b2bState.month;
+    renderB2B();
+    renderPlan();
+  } catch (e) {
+    b2bState.error = e.message || 'Не удалось загрузить локальные B2B-данные';
+    const source = document.getElementById('b2b-source');
+    if (source) source.textContent = b2bState.error;
+  }
+}
 
 function parseCSV(text) {
   const rows = []; let row = []; let cell = ''; let inQuotes = false;
@@ -1233,6 +1365,81 @@ function renderDaily() {
   renderTicker();
 }
 
+function renderB2B() {
+  const host = document.getElementById('b2b-table-host');
+  if (!host) return;
+  const month = b2bState.month;
+  const rows = b2bMonthRows(month).filter(x => !x.planned);
+  const rented = rows.reduce((s, x) => s + Number(x.rentedPlaces || 0), 0);
+  const paid = rows.reduce((s, x) => s + Number(x.paidPlaces || 0), 0);
+  const free = Math.max(0, rented - paid);
+  const occupancy = rented ? Math.round(paid / rented * 100) : 0;
+  const setText = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+  setText('b2b-rented', String(rented)); setText('b2b-paid', String(paid)); setText('b2b-free', String(free));
+  setText('b2b-occupancy', occupancy + '%'); setText('b2b-shift-count', rows.length + ' смен');
+  if (!b2bState.loaded) { host.innerHTML = '<div class="empty-state">Загрузка локальных B2B-данных…</div>'; return; }
+  if (!rows.length) { host.innerHTML = '<div class="empty-state">Нет тестовых смен за выбранный месяц</div>'; return; }
+  host.innerHTML = '<table class="b2b-table"><thead><tr><th>Дата</th><th>Менеджер</th><th>Санаторий</th><th>Арендовано</th><th>Оплачено</th><th>Свободно</th><th>Заполненность</th></tr></thead><tbody>' + rows.sort((a, b) => a.date.localeCompare(b.date)).map(x => {
+    const pct = x.rentedPlaces ? Math.round(x.paidPlaces / x.rentedPlaces * 100) : 0;
+    return '<tr><td>' + esc(x.date) + '</td><td>' + esc(x.manager) + '</td><td>' + esc(x.sanatorium) + '</td><td class="amt">' + x.rentedPlaces + '</td><td class="amt">' + x.paidPlaces + '</td><td class="amt">' + Math.max(0, x.rentedPlaces - x.paidPlaces) + '</td><td><div class="b2b-occupancy"><div class="b2b-occupancy__bar"><div class="b2b-occupancy__fill" style="width:' + pct + '%"></div></div><div class="b2b-occupancy__text">' + pct + '%</div></div></td></tr>';
+  }).join('') + '</tbody></table>';
+  const grouped = {};
+  rows.forEach(x => { const key = x.sanatorium || 'Без санатория'; const item = grouped[key] || (grouped[key] = { rented: 0, paid: 0, shifts: 0 }); item.rented += Number(x.rentedPlaces || 0); item.paid += Number(x.paidPlaces || 0); item.shifts++; });
+  const sanHost = document.getElementById('b2b-sanatorium-host');
+  if (sanHost) sanHost.innerHTML = Object.keys(grouped).sort().map(key => { const x = grouped[key]; const pct = x.rented ? Math.round(x.paid / x.rented * 100) : 0; return '<div class="rank"><div class="rank__n">•</div><div class="rank__body"><div class="rank__name">' + esc(key) + ' <span>· ' + x.shifts + ' смены</span></div><div class="rank__track"><div class="rank__fill" style="width:' + pct + '%"></div></div></div><span class="rank__val">' + pct + '%</span></div>'; }).join('');
+}
+
+function renderPlan() {
+  const host = document.getElementById('plan-grid-host');
+  if (!host || !b2bState.loaded) return;
+  const month = b2bState.month;
+  const [year, monthNum] = month.split('-').map(Number);
+  const daysInMonth = new Date(year, monthNum, 0).getDate();
+  const managers = b2bManagers();
+  const sanatoria = (b2bState.data.sanatoria || []).slice();
+  const managerSelect = document.getElementById('plan-manager');
+  const sanSelect = document.getElementById('plan-sanatorium');
+  const selectedManager = managerSelect && managerSelect.options.length ? managerSelect.value : 'all';
+  const selectedSanatorium = sanSelect && sanSelect.options.length ? sanSelect.value : sanatoria[0] || '';
+  if (managerSelect && !managerSelect.options.length) { managerSelect.innerHTML = '<option value="all">Все менеджеры</option>' + managers.map(x => '<option>' + esc(x) + '</option>').join(''); managerSelect.value = selectedManager || 'all'; }
+  if (sanSelect && !sanSelect.options.length) { sanSelect.innerHTML = sanatoria.map(x => '<option>' + esc(x) + '</option>').join(''); sanSelect.value = selectedSanatorium; }
+  let html = '<div class="plan-grid"><div class="plan-cell plan-cell--head plan-cell--name">Менеджер / санаторий</div>';
+  for (let d = 1; d <= daysInMonth; d++) { const date = `${year}-${String(monthNum).padStart(2, '0')}-${String(d).padStart(2, '0')}`; const wd = new Date(year, monthNum - 1, d).getDay(); html += '<div class="plan-cell plan-cell--head ' + ((wd === 0 || wd === 6) ? 'plan-cell--weekend' : '') + '">' + d + '</div>'; }
+  const visibleManagers = selectedManager && selectedManager !== 'all' ? managers.filter(x => x === selectedManager) : managers;
+  visibleManagers.forEach(manager => {
+    html += '<div class="plan-cell plan-cell--name"><span class="avatar" style="background:' + esc(colorFor(manager)) + ';color:#fff">' + esc(initials(manager)) + '</span><span>' + esc(manager) + '</span></div>';
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = `${year}-${String(monthNum).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const wd = new Date(year, monthNum - 1, d).getDay();
+      const weekend = wd === 0 || wd === 6;
+      const base = (b2bState.data.schedule || []).find(x => x.date === date && x.manager === manager);
+      const custom = plannedShift(date, manager);
+      const item = custom && custom.status === 'cancelled' ? null : (custom || base);
+      let cls = 'plan-cell', content = '', title = date + ': свободно';
+      if (weekend) { cls += ' plan-cell--weekend'; title = date + ': выходной'; }
+      else if (item) { cls += item.status === 'completed' ? ' plan-cell--completed' : ' plan-cell--planned'; content = '✓'; title = date + ': ' + (item.sanatorium || '') + (custom ? ' · тестовое назначение' : ''); }
+      const clickable = !weekend;
+      html += '<div class="' + cls + '" data-plan-date="' + date + '" data-plan-manager="' + esc(manager) + '" title="' + esc(title) + '" style="cursor:' + (clickable ? 'pointer' : 'default') + '">' + content + '</div>';
+    }
+  });
+  host.innerHTML = html + '</div>';
+  host.querySelectorAll('[data-plan-date]').forEach(cell => cell.addEventListener('click', () => {
+    if (new Date(cell.dataset.planDate + 'T00:00:00').getDay() % 6 === 0) return;
+    const date = cell.dataset.planDate, manager = cell.dataset.planManager;
+    const existing = plannedShift(date, manager);
+    const base = (b2bState.data.schedule || []).find(x => x.date === date && x.manager === manager);
+    if (existing) {
+      if (existing.status === 'cancelled') b2bState.plan = b2bState.plan.filter(x => !(x.date === date && x.manager === manager));
+      else b2bState.plan = b2bState.plan.map(x => x.date === date && x.manager === manager ? { ...x, status: 'cancelled' } : x);
+    } else if (base) {
+      b2bState.plan.push({ date, manager, sanatorium: base.sanatorium, status: 'cancelled' });
+    } else {
+      b2bState.plan.push({ date, manager, sanatorium: selectedSanatorium, status: 'planned' });
+    }
+    writeB2BPlan(); renderPlan();
+  }));
+}
+
 function renderMonth() {
   const month = state.currentMonth || new Date().toISOString().slice(0, 7);
   const [year, monthNum] = month.split('-').map(Number);
@@ -1306,16 +1513,22 @@ function switchView(view) {
   });
   document.getElementById('view-daily').style.display = view === 'daily' ? '' : 'none';
   document.getElementById('view-month').style.display = view === 'month' ? '' : 'none';
+  document.getElementById('view-b2b').style.display = view === 'b2b' ? '' : 'none';
+  document.getElementById('view-plan').style.display = view === 'plan' ? '' : 'none';
   document.getElementById('date-picker-wrap').style.display = view === 'daily' ? '' : 'none';
   document.getElementById('month-picker-wrap').style.display = view === 'month' ? '' : 'none';
-  if (view === 'daily') renderDaily(); else renderMonth();
+  if (view === 'daily') renderDaily(); else if (view === 'month') renderMonth(); else if (view === 'b2b') renderB2B(); else renderPlan();
 }
 
 function formatRub(v) { return Math.round(v).toLocaleString('ru-RU') + ' ₽'; }
 function formatDateHuman(iso) {
   if (!iso) return '';
-  try { return new Date(iso + 'T00:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' }); }
-  catch { return iso; }
+  const raw = String(iso).trim();
+  const match = /^(\d{2})\.(\d{2})\.(\d{4})/.exec(raw);
+  const normalized = match ? `${match[3]}-${match[2]}-${match[1]}` : raw.slice(0, 10);
+  const date = new Date(normalized + 'T00:00:00');
+  if (Number.isNaN(date.getTime())) return raw || '—';
+  return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
 }
 
 function showToast(msg, isError = false) {
@@ -1359,7 +1572,7 @@ async function refreshData(isBackground = false) {
     document.getElementById('pending-tbody').innerHTML = '<tr><td colspan="3" class="skeleton" style="height:60px">&nbsp;</td></tr>';
   }
   await fetchGoogleSheets(isBackground);
-  if (state.currentView === 'month') renderMonth(); else renderDaily();
+  if (state.currentView === 'month') renderMonth(); else if (state.currentView === 'b2b') renderB2B(); else if (state.currentView === 'plan') renderPlan(); else renderDaily();
   if (!state.loadError && !isBackground) {
     showToast('🔄 Данные обновлены (' + monthAggregates(state.currentMonth).total + ' отчётов в периоде)');
   }
@@ -1439,8 +1652,19 @@ function init() {
     state.currentMonth = e.target.value;
     if (state.loaded) { if (state.currentView === 'month') renderMonth(); else renderDaily(); }
   });
+  document.getElementById('b2b-month').addEventListener('change', (e) => { b2bState.month = e.target.value; renderB2B(); renderPlan(); });
+  document.getElementById('plan-month').addEventListener('change', (e) => { b2bState.month = e.target.value; renderPlan(); renderB2B(); });
+  document.getElementById('plan-manager').addEventListener('change', renderPlan);
+  document.getElementById('plan-sanatorium').addEventListener('change', renderPlan);
+  document.getElementById('plan-reset').addEventListener('click', () => { b2bState.plan = []; writeB2BPlan(); renderPlan(); showToast('Тестовый план очищен'); });
   document.querySelectorAll('#view-toggle button').forEach(btn => {
     btn.addEventListener('click', () => switchView(btn.dataset.view));
+  });
+  document.querySelectorAll('[data-home-view]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      switchView(btn.dataset.homeView);
+      document.getElementById('view-toggle').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
   });
 
   state.relativeTimeTimer = setInterval(updateRelativeTime, 10000);
@@ -1456,6 +1680,7 @@ function init() {
   });
 
   refreshData();
+  loadB2B();
   startAutoRefresh();
 }
 
