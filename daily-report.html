@@ -1023,6 +1023,12 @@ const state = {
 
 const B2B_STORAGE_KEY = 'salescontrol-b2b-plan-v1';
 const b2bState = { data: null, loaded: false, error: null, month: '2026-08', plan: [] };
+try {
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', 'data/b2b-test.json', false);
+  xhr.send(null);
+  if (xhr.status === 200) { b2bState.data = JSON.parse(xhr.responseText); b2bState.month = b2bState.data.month || b2bState.month; b2bState.loaded = true; }
+} catch (e) {}
 
 function readB2BPlan() {
   try {
@@ -1038,8 +1044,9 @@ function planKey(date, manager) { return date + '|' + manager; }
 function plannedShift(date, manager) {
   const custom = b2bState.plan.find(x => x.date === date && x.manager === manager);
   if (custom) return custom;
-  const base = (b2bState.data && (b2bState.data.shifts || b2bState.data.schedule) || []).find(x => x.date === date && x.manager === manager);
-  if (base) return { ...base, status: base.status || 'planned' };
+  const shifts = (b2bState.data && b2bState.data.shifts) || [];
+  const base = shifts.find(x => x.date === date && x.manager === manager);
+  if (base) return { ...base, status: 'planned' };
   return null;
 }
 function b2bManagers() {
@@ -1560,13 +1567,14 @@ function renderMonth() {
 function clickHeatmapCell(dateIso, manager) {
   const planItem = plannedShift ? plannedShift(dateIso, manager) : null;
   if (planItem) {
-    if (!b2bState.plan.find(x => x.date === dateIso && x.manager === manager)) {
-      b2bState.plan.push({ date: dateIso, manager, sanatorium: planItem.sanatorium || '', status: 'cancelled' });
+    const existing = b2bState.plan.find(x => x.date === dateIso && x.manager === manager);
+    const currentStatus = existing ? existing.status : planItem.status;
+    const next = currentStatus === 'planned' ? 'completed' : currentStatus === 'completed' ? 'cancelled' : 'planned';
+    if (!existing) {
+      b2bState.plan.push({ date: dateIso, manager, sanatorium: planItem.sanatorium || '', status: next });
+    } else {
+      b2bState.plan = b2bState.plan.map(x => x.date === dateIso && x.manager === manager ? { ...x, status: next } : x);
     }
-    const next = planItem.status === 'planned' ? 'completed'
-      : planItem.status === 'completed' ? 'cancelled'
-      : 'planned';
-    b2bState.plan = b2bState.plan.map(x => x.date === dateIso && x.manager === manager ? { ...x, status: next } : x);
     writeB2BPlan(); renderMonth(); renderB2B(); renderPlan();
     return;
   }
