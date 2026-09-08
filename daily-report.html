@@ -1045,6 +1045,7 @@ function readB2BPlan() {
     if (Array.isArray(saved)) b2bState.plan = saved;
   } catch (e) { b2bState.plan = []; }
 }
+readB2BPlan();
 function writeB2BPlan() {
   try { localStorage.setItem(B2B_STORAGE_KEY, JSON.stringify(b2bState.plan)); } catch (e) {}
 }
@@ -1512,7 +1513,7 @@ function renderMonth() {
       let cls = 'heatmap__cell';
       let status = 'Нет активности';
       let content = '';
-      const planItem = plannedShift && b2bState.loaded ? plannedShift(iso, m) : null;
+      const planItem = plannedShift ? plannedShift(iso, m) : null;
       const clickable = !!planItem || (!isWeekend && !isFuture);
       if (planItem && planItem.status !== 'cancelled') {
         const planDone = planItem.status === 'completed';
@@ -1568,7 +1569,7 @@ function renderMonth() {
 }
 
 function clickHeatmapCell(dateIso, manager) {
-  const planItem = b2bState.loaded ? plannedShift(dateIso, manager) : null;
+  const planItem = plannedShift ? plannedShift(dateIso, manager) : null;
   if (planItem) {
     const next = planItem.status === 'planned' ? 'completed'
       : planItem.status === 'completed' ? 'cancelled'
