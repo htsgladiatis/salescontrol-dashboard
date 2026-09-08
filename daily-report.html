@@ -1435,7 +1435,7 @@ function renderPlan() {
   const selectedSanatorium = sanSelect && sanSelect.options.length ? sanSelect.value : sanatoria[0] || '';
   if (managerSelect && !managerSelect.options.length) { managerSelect.innerHTML = '<option value="all">Все менеджеры</option>' + managers.map(x => '<option>' + esc(x) + '</option>').join(''); managerSelect.value = selectedManager || 'all'; }
   if (sanSelect && !sanSelect.options.length) { sanSelect.innerHTML = sanatoria.map(x => '<option>' + esc(x) + '</option>').join(''); sanSelect.value = selectedSanatorium; }
-  let html = '<div class="plan-grid"><div class="plan-cell plan-cell--head plan-cell--name">Менеджер / санаторий</div>';
+  let html = '<div class="plan-grid" style="grid-template-columns:220px repeat(' + daysInMonth + ',32px)"><div class="plan-cell plan-cell--head plan-cell--name">Менеджер / санаторий</div>';
   for (let d = 1; d <= daysInMonth; d++) { const date = `${year}-${String(monthNum).padStart(2, '0')}-${String(d).padStart(2, '0')}`; const wd = new Date(year, monthNum - 1, d).getDay(); html += '<div class="plan-cell plan-cell--head ' + ((wd === 0 || wd === 6) ? 'plan-cell--weekend' : '') + '">' + d + '</div>'; }
   const visibleManagers = selectedManager && selectedManager !== 'all' ? managers.filter(x => x === selectedManager) : managers;
   visibleManagers.forEach(manager => {
@@ -1486,7 +1486,7 @@ function renderMonth() {
   document.getElementById('month-label').textContent = ml;
   if (!totalManagers) { host.innerHTML = '<div class="empty-state">📭 Справочник менеджеров пуст</div>'; return; }
 
-  let html = '<div class="heatmap">';
+  let html = '<div class="heatmap" style="grid-template-columns:220px repeat(' + daysInMonth + ',32px)">';
   html += '<div class="heatmap__cell heatmap__cell--name" style="font-weight:600;color:var(--txt-3)">Менеджер</div>';
   for (let d = 1; d <= daysInMonth; d++) {
     const wd = new Date(year, monthNum - 1, d).getDay();
