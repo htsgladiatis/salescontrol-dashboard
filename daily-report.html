@@ -603,7 +603,7 @@ a.nav__item{text-decoration:none}
 .status-dot--info{background:var(--txt-3)}
 
 .heatmap-wrap{overflow-x:auto;padding:2px}
-.heatmap{display:grid;grid-template-columns:220px repeat(31,32px);gap:2px;font-size:11px;width:max-content;min-width:100%}
+.heatmap{display:grid;grid-template-columns:220px repeat(var(--days,31),32px);gap:2px;font-size:11px;width:max-content;min-width:100%}
 .heatmap__cell{height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px;font-size:10px;color:var(--txt-3)}
 .heatmap__cell--name{background:transparent;justify-content:flex-start;padding-left:12px;font-size:var(--fs-sm);color:var(--txt);gap:8px}
 .heatmap__cell--day-num{background:var(--surface-2);color:var(--txt-3);border:1px solid var(--line)}
@@ -619,7 +619,18 @@ a.nav__item{text-decoration:none}
 .heatmap-legend__item{display:inline-flex;align-items:center;gap:6px}
 .heatmap-legend__dot{width:12px;height:12px;border-radius:4px;background:var(--surface-2);border:1px solid var(--line)}
 .heatmap-legend__dot--active{background:var(--pos);border-color:transparent}
+.heatmap-legend__dot--plan{background:var(--warn);border-color:transparent}
+.heatmap-legend__dot--done{background:var(--pos);border-color:transparent}
+.heatmap-legend__dot--missed{background:var(--neg);border-color:transparent}
 .heatmap-legend__dot--weekend{background:var(--surface-3)}
+.plan-controls{display:flex;align-items:end;gap:var(--sp-3);flex-wrap:wrap;margin-bottom:var(--sp-3);padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface-2)}
+.plan-controls__toggle{display:inline-flex;align-items:center;gap:7px;min-height:36px;color:var(--txt);font-size:var(--fs-sm);font-weight:600;cursor:pointer}
+.plan-controls__toggle input{accent-color:var(--lime);width:16px;height:16px}
+.plan-controls__field{display:flex;flex-direction:column;gap:3px;color:var(--txt-3);font-size:var(--fs-xs)}
+.plan-controls__field select{min-height:36px;min-width:170px;padding:0 10px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--txt);font:inherit}
+.plan-controls__field select:disabled{opacity:.65;cursor:not-allowed}
+.plan-controls__hint{align-self:center;color:var(--txt-3);font-size:var(--fs-xs)}
+.plan-controls__reset{align-self:center}
 .heatmap-tip{position:fixed;z-index:120;pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .14s,transform .14s;background:var(--surface);border:1px solid var(--line-strong);border-radius:var(--r-sm);padding:9px 12px;box-shadow:var(--shadow);font-size:var(--fs-xs);min-width:150px}
 .heatmap-tip[data-on="1"]{opacity:1;transform:none}
 .heatmap-tip__date{font-weight:700;color:var(--txt);margin-bottom:3px}
@@ -659,7 +670,7 @@ a.nav__item{text-decoration:none}
 .plan-field{display:flex;flex-direction:column;gap:5px;color:var(--txt-3);font-size:var(--fs-xs)}
 .plan-field select{min-height:36px;padding:0 10px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--txt);font:inherit}
 .plan-hint{color:var(--txt-3);font-size:var(--fs-xs);margin:0 0 var(--sp-3)}
-.plan-grid-wrap{overflow:auto}.plan-grid{display:grid;grid-template-columns:220px repeat(31,32px);gap:2px;width:max-content;min-width:100%;font-size:11px}.plan-cell{height:34px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:var(--surface-2);color:var(--txt-3);border:1px solid transparent;cursor:pointer}.plan-cell--head{background:var(--surface-2);border-color:var(--line);cursor:default}.plan-cell--name{justify-content:flex-start;padding:0 10px;gap:8px;background:transparent;color:var(--txt);cursor:default;font-size:var(--fs-sm)}.plan-cell--weekend{background:var(--violet-soft);cursor:default}.plan-cell--planned{background:var(--warn);color:#171307;font-weight:700}.plan-cell--completed{background:var(--pos);color:#0b0f08;font-weight:700}.plan-cell:hover:not(.plan-cell--head):not(.plan-cell--name):not(.plan-cell--weekend){border-color:var(--lime)}
+.plan-grid-wrap{overflow:auto}.plan-grid{display:grid;grid-template-columns:220px repeat(var(--days,31),32px);gap:2px;width:max-content;min-width:100%;font-size:11px}.plan-cell{height:34px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:var(--surface-2);color:var(--txt-3);border:1px solid transparent;cursor:pointer}.plan-cell--head{background:var(--surface-2);border-color:var(--line);cursor:default}.plan-cell--name{justify-content:flex-start;padding:0 10px;gap:8px;background:transparent;color:var(--txt);cursor:default;font-size:var(--fs-sm)}.plan-cell--weekend{background:var(--violet-soft);cursor:default}.plan-cell--planned{background:var(--warn);color:#171307;font-weight:700}.plan-cell--completed{background:var(--pos);color:#0b0f08;font-weight:700}.plan-cell:hover:not(.plan-cell--head):not(.plan-cell--name):not(.plan-cell--weekend){border-color:var(--lime)}
 @media(max-width:1024px){.b2b-layout{grid-template-columns:1fr}.b2b-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:720px){.b2b-grid{grid-template-columns:1fr}}
 
@@ -900,12 +911,14 @@ a.nav__item{text-decoration:none}
           <article class="card" style="margin-bottom:var(--sp-4)">
             <div class="report-table__header">
               <div class="report-table__title" id="heatmap-title">—</div>
-              <span class="report-table__hint">кликни по ячейке, чтобы открыть день</span>
+              <span class="report-table__hint">Для плана включите редактирование ниже; обычный клик открывает день</span>
             </div>
             <div id="heatmap-host" class="heatmap-wrap"></div>
             <div class="heatmap-legend" aria-label="Обозначения heatmap">
-              <span class="heatmap-legend__item"><span class="heatmap-legend__dot heatmap-legend__dot--active"></span>Есть активность</span>
-              <span class="heatmap-legend__item"><span class="heatmap-legend__dot"></span>Нет активности</span>
+              <span class="heatmap-legend__item"><span class="heatmap-legend__dot heatmap-legend__dot--plan"></span>Запланировано</span>
+              <span class="heatmap-legend__item"><span class="heatmap-legend__dot heatmap-legend__dot--done"></span>Выполнено</span>
+              <span class="heatmap-legend__item"><span class="heatmap-legend__dot heatmap-legend__dot--missed"></span>Прогул / нет отчёта</span>
+              <span class="heatmap-legend__item"><span class="heatmap-legend__dot heatmap-legend__dot--active"></span>Есть отчёт</span>
               <span class="heatmap-legend__item"><span class="heatmap-legend__dot heatmap-legend__dot--weekend"></span>Выходной</span>
             </div>
           </article>
@@ -1022,13 +1035,17 @@ const state = {
 };
 
 const B2B_STORAGE_KEY = 'salescontrol-b2b-plan-v1';
-const b2bState = { data: null, loaded: false, error: null, month: '2026-08', plan: [] };
+const b2bState = { data: null, loaded: false, error: null, month: '2026-08', plan: [], planEditMode: false, planManager: 'all', planSanatorium: '' };
 try {
   const xhr = new XMLHttpRequest();
   xhr.open('GET', 'data/b2b-test.json', false);
   xhr.send(null);
-  if (xhr.status === 200) { b2bState.data = JSON.parse(xhr.responseText); b2bState.month = b2bState.data.month || b2bState.month; b2bState.loaded = true; }
-} catch (e) {}
+  if (xhr.status === 200) {
+    b2bState.data = JSON.parse(xhr.responseText);
+    b2bState.month = b2bState.data.month || b2bState.month;
+    b2bState.loaded = true;
+  }
+} catch (e) { /* fallback: loadB2B() will retry async */ }
 
 function readB2BPlan() {
   try {
@@ -1037,6 +1054,7 @@ function readB2BPlan() {
   } catch (e) { b2bState.plan = []; }
 }
 readB2BPlan();
+
 function writeB2BPlan() {
   try { localStorage.setItem(B2B_STORAGE_KEY, JSON.stringify(b2bState.plan)); } catch (e) {}
 }
@@ -1044,9 +1062,12 @@ function planKey(date, manager) { return date + '|' + manager; }
 function plannedShift(date, manager) {
   const custom = b2bState.plan.find(x => x.date === date && x.manager === manager);
   if (custom) return custom;
-  const shifts = (b2bState.data && b2bState.data.shifts) || [];
-  const base = shifts.find(x => x.date === date && x.manager === manager);
-  if (base) return { ...base, status: 'planned' };
+  const sources = b2bState.data ? [
+    ...(b2bState.data.shifts || []),
+    ...(b2bState.data.schedule || [])
+  ] : [];
+  const base = sources.find(x => x.date === date && x.manager === manager);
+  if (base) return { ...base, status: base.status || 'planned' };
   return null;
 }
 function b2bManagers() {
@@ -1059,7 +1080,6 @@ function b2bMonthRows(month) {
   return rows.concat(planned);
 }
 async function loadB2B() {
-  readB2BPlan();
   try {
     const response = await fetch('data/b2b-test.json', { cache: 'no-store' });
     if (!response.ok) throw new Error('HTTP ' + response.status);
@@ -1069,6 +1089,7 @@ async function loadB2B() {
     b2bState.error = null;
     if (state.currentView === 'month') renderMonth();
     renderB2B();
+    renderPlan();
   } catch (e) {
     b2bState.error = e.message || 'Не удалось загрузить локальные B2B-данные';
     const source = document.getElementById('b2b-source');
@@ -1482,7 +1503,22 @@ function renderMonth() {
   document.getElementById('month-label').textContent = ml;
   if (!totalManagers) { host.innerHTML = '<div class="empty-state">📭 Справочник менеджеров пуст</div>'; return; }
 
-  let html = '<div class="heatmap" style="grid-template-columns:220px repeat(' + daysInMonth + ',32px)">';
+  const managers = b2bManagers();
+  const sanatoria = (b2bState.data && b2bState.data.sanatoria || []).slice();
+  const selectedManager = b2bState.planManager || 'all';
+  const selectedSanatorium = b2bState.planSanatorium || sanatoria[0] || '';
+  let html = '<div class="plan-controls" aria-label="Управление планом">' +
+    '<label class="plan-controls__toggle"><input type="checkbox" id="plan-edit-toggle"' + (b2bState.planEditMode ? ' checked' : '') + '> <span>Редактировать план</span></label>' +
+    '<label class="plan-controls__field">Менеджер<select id="plan-manager-select"' + (b2bState.planEditMode ? '' : ' disabled') + '><option value="all">Все менеджеры</option>' +
+      managers.map(m => '<option value="' + esc(m) + '"' + (m === selectedManager ? ' selected' : '') + '>' + esc(m) + '</option>').join('') +
+    '</select></label>' +
+    '<label class="plan-controls__field">Санаторий<select id="plan-sanatorium-select"' + (b2bState.planEditMode ? '' : ' disabled') + '>' +
+      (sanatoria.length ? sanatoria.map(s => '<option value="' + esc(s) + '"' + (s === selectedSanatorium ? ' selected' : '') + '>' + esc(s) + '</option>').join('') : '<option value="">Без санатория</option>') +
+    '</select></label>' +
+    '<button type="button" class="btn btn--sm plan-controls__reset" id="plan-reset-month">Очистить месяц</button>' +
+    '<span class="plan-controls__hint">' + (b2bState.planEditMode ? 'Выберите менеджера и нажмите на рабочий день' : 'Включите режим, чтобы назначать смены') + '</span>' +
+  '</div>';
+  html += '<div class="heatmap" style="grid-template-columns:220px repeat(' + daysInMonth + ',32px)">';
   html += '<div class="heatmap__cell heatmap__cell--name" style="font-weight:600;color:var(--txt-3)">Менеджер</div>';
   for (let d = 1; d <= daysInMonth; d++) {
     const wd = new Date(year, monthNum - 1, d).getDay();
@@ -1506,8 +1542,11 @@ function renderMonth() {
       let status = 'Нет активности';
       let content = '';
       const planItem = plannedShift ? plannedShift(iso, m) : null;
-      const clickable = !!planItem || (!isWeekend && !isFuture);
-      if (planItem && planItem.status !== 'cancelled') {
+      const canEditCell = b2bState.planEditMode && (selectedManager === 'all' || selectedManager === m);
+      const clickable = canEditCell || !!planItem || (!b2bState.planEditMode && !isWeekend && !isFuture);
+      if (planItem && planItem.status === 'cancelled') {
+        cls += ' heatmap__cell--plan-missed'; status = 'Прогул'; content = '✗';
+      } else if (planItem) {
         const planDone = planItem.status === 'completed';
         if (planDone || hasReport) { cls += ' heatmap__cell--plan-done'; status = planDone ? 'План отработан' : 'Активность есть + план'; content = '✓'; }
         else if (!isFuture) { cls += ' heatmap__cell--plan-missed'; status = 'План без отчёта'; content = '✗'; }
@@ -1547,31 +1586,60 @@ function renderMonth() {
   };
   const hideTip = () => { if (tip) tip.dataset.on = '0'; };
   host.querySelectorAll('[data-heatmap-date]').forEach(cell => {
-    const mgr = cell.dataset.heatmapManager;
     cell.addEventListener('mouseenter', () => showTip(cell));
     cell.addEventListener('mouseleave', hideTip);
     cell.addEventListener('focus', () => showTip(cell));
     cell.addEventListener('blur', hideTip);
-    cell.addEventListener('click', () => { if (cell.getAttribute('role') === 'button') clickHeatmapCell(cell.dataset.heatmapDate, mgr); });
+    cell.addEventListener('click', () => { if (cell.getAttribute('role') === 'button') clickHeatmapCell(cell.dataset.heatmapDate, cell.dataset.heatmapManager); });
     cell.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); if (cell.getAttribute('role') === 'button') clickHeatmapCell(cell.dataset.heatmapDate, mgr); }
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); if (cell.getAttribute('role') === 'button') clickHeatmapCell(cell.dataset.heatmapDate, cell.dataset.heatmapManager); }
     });
+  });
+  const editToggle = document.getElementById('plan-edit-toggle');
+  const managerSelect = document.getElementById('plan-manager-select');
+  const sanatoriumSelect = document.getElementById('plan-sanatorium-select');
+  if (editToggle) editToggle.addEventListener('change', () => {
+    b2bState.planEditMode = editToggle.checked;
+    renderMonth();
+  });
+  const resetPlan = document.getElementById('plan-reset-month');
+  if (resetPlan) resetPlan.addEventListener('click', () => {
+    const monthPrefix = month + '-';
+    b2bState.plan = b2bState.plan.filter(x => !String(x.date || '').startsWith(monthPrefix));
+    writeB2BPlan();
+    renderMonth();
+  });
+  if (managerSelect) managerSelect.addEventListener('change', () => {
+    b2bState.planManager = managerSelect.value;
+    renderMonth();
+  });
+  if (sanatoriumSelect) sanatoriumSelect.addEventListener('change', () => {
+    b2bState.planSanatorium = sanatoriumSelect.value;
   });
   renderTicker();
 }
 
 function clickHeatmapCell(dateIso, manager) {
-  const planItem = plannedShift ? plannedShift(dateIso, manager) : null;
-  if (planItem) {
-    const existing = b2bState.plan.find(x => x.date === dateIso && x.manager === manager);
-    const currentStatus = existing ? existing.status : planItem.status;
-    const next = currentStatus === 'planned' ? 'completed' : currentStatus === 'completed' ? 'cancelled' : 'planned';
-    if (!existing) {
-      b2bState.plan.push({ date: dateIso, manager, sanatorium: planItem.sanatorium || '', status: next });
+  if (b2bState.planEditMode) {
+  if (b2bState.planEditMode && b2bState.planManager !== 'all' && b2bState.planManager !== manager) return;
+    if (new Date(dateIso + 'T00:00:00').getDay() % 6 === 0) return;
+    const custom = b2bState.plan.find(x => x.date === dateIso && x.manager === manager);
+    const base = !custom ? plannedShift(dateIso, manager) : null;
+    if (!custom && !base) {
+      b2bState.plan.push({ date: dateIso, manager, sanatorium: b2bState.planSanatorium || '', status: 'planned' });
+    } else if (custom) {
+      const next = custom.status === 'planned' ? 'completed' : custom.status === 'completed' ? 'cancelled' : 'planned';
+      if (custom.status === 'cancelled') {
+        b2bState.plan = b2bState.plan.filter(x => !(x.date === dateIso && x.manager === manager));
+      } else {
+        b2bState.plan = b2bState.plan.map(x => x.date === dateIso && x.manager === manager ? { ...x, status: next } : x);
+      }
     } else {
-      b2bState.plan = b2bState.plan.map(x => x.date === dateIso && x.manager === manager ? { ...x, status: next } : x);
+      const next = base.status === 'planned' ? 'completed' : 'cancelled';
+      b2bState.plan.push({ date: dateIso, manager, sanatorium: base.sanatorium || '', status: next });
     }
-    writeB2BPlan(); renderMonth(); renderB2B(); renderPlan();
+    writeB2BPlan();
+    renderMonth();
     return;
   }
   state.currentDate = dateIso;

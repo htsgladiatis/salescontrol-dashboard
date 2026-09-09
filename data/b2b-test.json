@@ -39,18 +39,5 @@
     {"date":"2026-09-09","manager":"Смирнова О.","sanatorium":"Ривьера","status":"planned"},
     {"date":"2026-09-17","manager":"Федорова Д.","sanatorium":"Заполярье","status":"planned"},
     {"date":"2026-09-24","manager":"Чернова Л.","sanatorium":"Сочи Парк","status":"planned"}
-  ],
-    {"date":"2026-08-01","manager":"Аксененко Е.","sanatorium":"Сочи Парк","status":"completed"},
-    {"date":"2026-08-02","manager":"Алейников В.","sanatorium":"Ривьера","status":"completed"},
-    {"date":"2026-08-04","manager":"Богданчикова М.","sanatorium":"Заполярье","status":"completed"},
-    {"date":"2026-08-06","manager":"Гаранина Н.","sanatorium":"Сочи Парк","status":"completed"},
-    {"date":"2026-08-09","manager":"Гнездилова Е.","sanatorium":"Белокуриха","status":"completed"},
-    {"date":"2026-08-11","manager":"Гузеева Н.","sanatorium":"Ривьера","status":"completed"},
-    {"date":"2026-08-14","manager":"Дадилова И.","sanatorium":"Заполярье","status":"completed"},
-    {"date":"2026-08-17","manager":"Дашивец П.","sanatorium":"Сочи Парк","status":"completed"},
-    {"date":"2026-08-20","manager":"Долгина М.","sanatorium":"Белокуриха","status":"completed"},
-    {"date":"2026-08-23","manager":"Иванова Т.","sanatorium":"Ривьера","status":"completed"},
-    {"date":"2026-08-26","manager":"Кичева В.","sanatorium":"Заполярье","status":"completed"},
-    {"date":"2026-08-29","manager":"Репина Б.","sanatorium":"Сочи Парк","status":"completed"}
   ]
 }
