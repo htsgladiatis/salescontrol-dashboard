@@ -1035,20 +1035,30 @@ const state = {
   NEW_TOAST_MIN_INTERVAL_MS: 30000,
 };
 
-const B2B_PLAN_API_URL = window.B2B_PLAN_API_URL || 'https://impulse.is-a.dev/webchat/api/b2b-plan';
+const B2B_PLAN_SHEET_NAME = 'План_смен';
+const B2B_PLAN_CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(B2B_PLAN_SHEET_NAME)}`;
 const b2bState = { data: null, loaded: false, error: null, month: '2026-08', plan: [], planEditMode: false, planManager: 'all', planSanatorium: '', planSyncTimer: null, planApiAvailable: false, planUpdatedAt: null };
-const LEGACY_PLAN_KEYS = new Set([
-  '2026-09-03|Аксененко Е.', '2026-09-07|Алейников В.', '2026-09-14|Богданчикова М.',
-  '2026-09-21|Гаранина Н.', '2026-09-10|Гнездилова Е.', '2026-09-15|Гузеева Н.',
-  '2026-09-11|Дадилова И.', '2026-09-22|Дашивец П.', '2026-09-18|Долгина М.',
-  '2026-09-08|Иванова Т.', '2026-09-25|Кичева В.', '2026-09-12|Кияева Н.',
-  '2026-09-16|Котова В.', '2026-09-05|Маркина С.', '2026-09-20|Морозова А.',
-  '2026-09-01|Петрова М.', '2026-09-13|Сидоров К.', '2026-09-09|Смирнова О.',
-  '2026-09-17|Федорова Д.', '2026-09-24|Чернова Л.'
-]);
-let b2bPlanWriteQueue = Promise.resolve();
+function normalizePlanDate(value) {
+  const text = String(value == null ? '' : value).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+  const display = /^(\d{1,2})[./](\d{1,2})[./](\d{4})$/.exec(text);
+  if (display) return `${display[3]}-${display[2].padStart(2, '0')}-${display[1].padStart(2, '0')}`;
+  const parsed = new Date(text);
+  if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+  return '';
+}
 function sanitizePlan(items) {
-  return (Array.isArray(items) ? items : []).filter(item => !LEGACY_PLAN_KEYS.has(String(item.date || '') + '|' + String(item.manager || '')));
+  const byKey = new Map();
+  for (const item of Array.isArray(items) ? items : []) {
+    const date = normalizePlanDate(item && item.date);
+    const manager = String(item && item.manager || '').trim();
+    const sanatorium = String(item && item.sanatorium || '').trim();
+    const status = ['planned', 'completed', 'cancelled'].includes(String(item && item.status || '').trim())
+      ? String(item.status).trim() : 'planned';
+    if (!date || !manager || !sanatorium) continue;
+    byKey.set(`${date}|${manager}`, { date, manager, sanatorium, status });
+  }
+  return Array.from(byKey.values()).sort((a, b) => a.date.localeCompare(b.date) || a.manager.localeCompare(b.manager, 'ru'));
 }
 try {
   const xhr = new XMLHttpRequest();
@@ -1062,41 +1072,34 @@ try {
 } catch (e) { /* fallback: loadB2B() will retry async */ }
 
 function cacheB2BPlan() {
-  // The shared API is the only source of truth; do not persist the plan in a browser.
+  // План редактируется только через Telegram и читается из общего листа Google Sheets.
 }
 function writeB2BPlan() {
-  if (!B2B_PLAN_API_URL) return Promise.resolve(false);
-  const snapshot = sanitizePlan(b2bState.plan).map(item => ({ ...item }));
-  b2bState.plan = snapshot;
-  b2bPlanWriteQueue = b2bPlanWriteQueue.then(async () => {
-    const response = await fetch(B2B_PLAN_API_URL, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan: snapshot })
-    });
-    if (!response.ok) throw new Error('HTTP ' + response.status);
-    const payload = await response.json();
-    b2bState.planApiAvailable = true;
-    b2bState.planUpdatedAt = payload.updatedAt || b2bState.planUpdatedAt;
-    return true;
-  }).catch(error => {
-    b2bState.planApiAvailable = false;
-    console.error('shared plan save error:', error);
-    showToast('⚠️ Общий план не сохранён на сервере', true);
-    return false;
-  });
-  return b2bPlanWriteQueue;
+  showToast('ℹ️ План редактируется в Telegram: /admin → План смен');
+  return Promise.resolve(false);
+}
+function parseB2BPlanCSV(text) {
+  const rows = parseCSV(text);
+  const header = (rows[0] || []).map(value => String(value).trim().toLowerCase());
+  const dateIndex = header.indexOf('дата');
+  const managerIndex = header.indexOf('менеджер');
+  const sanatoriumIndex = header.indexOf('санаторий');
+  const statusIndex = header.indexOf('статус');
+  if (dateIndex < 0 || managerIndex < 0) throw new Error('Лист План_смен имеет неверные заголовки');
+  return rows.slice(1).filter(row => row[dateIndex] && row[managerIndex]).map(row => ({
+    date: normalizePlanDate(row[dateIndex]),
+    manager: String(row[managerIndex]).trim(),
+    sanatorium: String(row[sanatoriumIndex >= 0 ? sanatoriumIndex : 2] || '').trim(),
+    status: String(row[statusIndex >= 0 ? statusIndex : 3] || 'planned').trim()
+  }));
 }
 async function loadSharedB2BPlan() {
-  if (!B2B_PLAN_API_URL) return false;
   try {
-    const response = await fetch(B2B_PLAN_API_URL, { cache: 'no-store' });
+    const response = await fetch(B2B_PLAN_CSV_URL, { cache: 'no-store' });
     if (!response.ok) throw new Error('HTTP ' + response.status);
-    const payload = await response.json();
-    if (!Array.isArray(payload.plan)) throw new Error('invalid shared plan response');
-    b2bState.planUpdatedAt = payload.updatedAt || null;
     b2bState.planApiAvailable = true;
-    b2bState.plan = sanitizePlan(payload.plan);
+    b2bState.plan = sanitizePlan(parseB2BPlanCSV(await response.text()));
+    b2bState.planUpdatedAt = new Date().toISOString();
     return true;
   } catch (error) {
     b2bState.planApiAvailable = false;
@@ -1107,7 +1110,7 @@ async function loadSharedB2BPlan() {
 function startSharedPlanSync() {
   if (b2bState.planSyncTimer) clearInterval(b2bState.planSyncTimer);
   b2bState.planSyncTimer = setInterval(async () => {
-    if (document.visibilityState !== 'visible' || b2bState.planEditMode) return;
+    if (document.visibilityState !== 'visible') return;
     if (await loadSharedB2BPlan() && state.currentView === 'month') renderMonth();
   }, 30000);
 }
@@ -1517,18 +1520,8 @@ function renderMonth() {
 
   const managers = b2bManagers();
   const sanatoria = (b2bState.data && b2bState.data.sanatoria || []).slice();
-  const selectedManager = b2bState.planManager || 'all';
-  const selectedSanatorium = b2bState.planSanatorium || sanatoria[0] || '';
-  let html = '<div class="plan-controls" aria-label="Управление планом">' +
-    '<label class="plan-controls__toggle"><input type="checkbox" id="plan-edit-toggle"' + (b2bState.planEditMode ? ' checked' : '') + '> <span>Редактировать план</span></label>' +
-    '<label class="plan-controls__field">Менеджер<select id="plan-manager-select"' + (b2bState.planEditMode ? '' : ' disabled') + '><option value="all">Все менеджеры</option>' +
-      managers.map(m => '<option value="' + esc(m) + '"' + (m === selectedManager ? ' selected' : '') + '>' + esc(m) + '</option>').join('') +
-    '</select></label>' +
-    '<label class="plan-controls__field">Санаторий<select id="plan-sanatorium-select"' + (b2bState.planEditMode ? '' : ' disabled') + '>' +
-      (sanatoria.length ? sanatoria.map(s => '<option value="' + esc(s) + '"' + (s === selectedSanatorium ? ' selected' : '') + '>' + esc(s) + '</option>').join('') : '<option value="">Без санатория</option>') +
-    '</select></label>' +
-    '<button type="button" class="btn btn--sm plan-controls__reset" id="plan-reset-month">Очистить месяц</button>' +
-    '<span class="plan-controls__hint">' + (b2bState.planEditMode ? 'Выберите менеджера и нажмите на рабочий день' : 'Включите режим, чтобы назначать смены') + '</span>' +
+  let html = '<div class="plan-controls" aria-label="Состояние плана">' +
+    '<span class="plan-controls__hint">План редактируется в Telegram: отправьте /admin → «📅 План смен». Здесь отображаются общие данные из листа «План_смен».</span>' +
   '</div>';
   html += '<div class="heatmap" style="grid-template-columns:220px repeat(' + daysInMonth + ',32px)">';
   html += '<div class="heatmap__cell heatmap__cell--name" style="font-weight:600;color:var(--txt-3)">Менеджер</div>';
@@ -1553,11 +1546,8 @@ function renderMonth() {
       let cls = 'heatmap__cell';
       let status = 'Нет активности';
       let content = '';
-      const rawPlanItem = b2bPlanOverride(iso, m);
-      const isRemoved = !!rawPlanItem && rawPlanItem.status === 'removed';
-      const planItem = isRemoved ? null : rawPlanItem;
-      const canEditCell = b2bState.planEditMode && (selectedManager === 'all' || selectedManager === m);
-      const clickable = canEditCell || !!planItem || (!b2bState.planEditMode && !isFuture);
+      const planItem = b2bPlanOverride(iso, m);
+      const clickable = !isFuture;
       if (planItem && planItem.status === 'cancelled') {
         cls += ' heatmap__cell--plan-missed'; status = 'Прогул'; content = '✗';
       } else if (planItem) {
@@ -1609,54 +1599,10 @@ function renderMonth() {
       if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); if (cell.getAttribute('role') === 'button') clickHeatmapCell(cell.dataset.heatmapDate, cell.dataset.heatmapManager); }
     });
   });
-  const editToggle = document.getElementById('plan-edit-toggle');
-  const managerSelect = document.getElementById('plan-manager-select');
-  const sanatoriumSelect = document.getElementById('plan-sanatorium-select');
-  if (editToggle) editToggle.addEventListener('change', () => {
-    b2bState.planEditMode = editToggle.checked;
-    renderMonth();
-  });
-  const resetPlan = document.getElementById('plan-reset-month');
-  if (resetPlan) resetPlan.addEventListener('click', () => {
-    const monthPrefix = month + '-';
-    // Clear only explicit plan entries; Google Sheets facts are never part of this array.
-    b2bState.plan = b2bState.plan.filter(x => !String(x.date || '').startsWith(monthPrefix));
-    writeB2BPlan();
-    renderMonth();
-  });
-  if (managerSelect) managerSelect.addEventListener('change', () => {
-    b2bState.planManager = managerSelect.value;
-    renderMonth();
-  });
-  if (sanatoriumSelect) sanatoriumSelect.addEventListener('change', () => {
-    b2bState.planSanatorium = sanatoriumSelect.value;
-  });
   renderTicker();
 }
 
 function clickHeatmapCell(dateIso, manager) {
-  if (b2bState.planEditMode) {
-    if (b2bState.planManager !== 'all' && b2bState.planManager !== manager) return;
-    const existingIndex = b2bState.plan.findIndex(x => x.date === dateIso && x.manager === manager);
-    const override = existingIndex >= 0 ? b2bState.plan[existingIndex] : null;
-    const current = override ? override.status : null;
-    const next = nextPlanStatus(current);    const item = {
-      date: dateIso,
-      manager,
-      sanatorium: (override && override.sanatorium) || b2bState.planSanatorium || '',
-      status: next
-    };
-    if (next === 'removed') {
-      b2bState.plan.splice(existingIndex, 1);
-    } else if (existingIndex >= 0) {
-      b2bState.plan[existingIndex] = { ...b2bState.plan[existingIndex], ...item };
-    } else {
-      b2bState.plan.push(item);
-    }
-    writeB2BPlan();
-    renderMonth();
-    return;
-  }
   state.currentDate = dateIso;
   document.getElementById('report-date').value = dateIso;
   switchView('daily');
