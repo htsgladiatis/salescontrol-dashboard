@@ -613,6 +613,7 @@ a.nav__item{text-decoration:none}
 .heatmap__cell--plan{background:var(--warn);color:#171307;font-weight:600}
 .heatmap__cell--plan-done{background:var(--pos);color:#0b0f08;font-weight:700}
 .heatmap__cell--plan-missed{background:var(--neg);color:#fff;font-weight:700}
+.heatmap__cell--removed{background:var(--surface-3);color:var(--txt-3);font-style:italic}
 .heatmap__cell[role="button"]{cursor:pointer;transition:transform .16s var(--ease),border-color .16s var(--ease)}
 .heatmap__cell[role="button"]:hover,.heatmap__cell[role="button"]:focus-visible{transform:translateY(-2px);border:1px solid var(--lime);outline:none}
 .heatmap-legend{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:var(--sp-3);font-size:var(--fs-xs);color:var(--txt-3)}
@@ -1034,8 +1035,9 @@ const state = {
   NEW_TOAST_MIN_INTERVAL_MS: 30000,
 };
 
-const B2B_STORAGE_KEY = 'salescontrol-b2b-plan-v1';
-const b2bState = { data: null, loaded: false, error: null, month: '2026-08', plan: [], planEditMode: false, planManager: 'all', planSanatorium: '' };
+const B2B_PLAN_API_URL = window.B2B_PLAN_API_URL || 'https://impulse.is-a.dev/webchat/api/b2b-plan';
+const b2bState = { data: null, loaded: false, error: null, month: '2026-08', plan: [], planEditMode: false, planManager: 'all', planSanatorium: '', planSyncTimer: null, planApiAvailable: false, planUpdatedAt: null };
+let b2bPlanWriteQueue = Promise.resolve();
 try {
   const xhr = new XMLHttpRequest();
   xhr.open('GET', 'data/b2b-test.json', false);
@@ -1047,28 +1049,71 @@ try {
   }
 } catch (e) { /* fallback: loadB2B() will retry async */ }
 
-function readB2BPlan() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(B2B_STORAGE_KEY) || 'null');
-    if (Array.isArray(saved)) b2bState.plan = saved;
-  } catch (e) { b2bState.plan = []; }
+function cacheB2BPlan() {
+  // The shared API is the only source of truth; do not persist the plan in a browser.
 }
-readB2BPlan();
-
 function writeB2BPlan() {
-  try { localStorage.setItem(B2B_STORAGE_KEY, JSON.stringify(b2bState.plan)); } catch (e) {}
+  if (!B2B_PLAN_API_URL) return Promise.resolve(false);
+  const snapshot = b2bState.plan.map(item => ({ ...item }));
+  b2bPlanWriteQueue = b2bPlanWriteQueue.then(async () => {
+    const response = await fetch(B2B_PLAN_API_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan: snapshot })
+    });
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const payload = await response.json();
+    b2bState.planApiAvailable = true;
+    b2bState.planUpdatedAt = payload.updatedAt || b2bState.planUpdatedAt;
+    return true;
+  }).catch(error => {
+    b2bState.planApiAvailable = false;
+    console.error('shared plan save error:', error);
+    showToast('⚠️ Общий план не сохранён на сервере', true);
+    return false;
+  });
+  return b2bPlanWriteQueue;
 }
-function planKey(date, manager) { return date + '|' + manager; }
-function plannedShift(date, manager) {
-  const custom = b2bState.plan.find(x => x.date === date && x.manager === manager);
-  if (custom) return custom;
-  const sources = b2bState.data ? [
+async function loadSharedB2BPlan() {
+  if (!B2B_PLAN_API_URL) return false;
+  try {
+    const response = await fetch(B2B_PLAN_API_URL, { cache: 'no-store' });
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const payload = await response.json();
+    if (!Array.isArray(payload.plan)) throw new Error('invalid shared plan response');
+    b2bState.planUpdatedAt = payload.updatedAt || null;
+    b2bState.planApiAvailable = true;
+    b2bState.plan = payload.plan;
+    return true;
+  } catch (error) {
+    b2bState.planApiAvailable = false;
+    console.warn('shared plan load error:', error.message);
+    return false;
+  }
+}
+function startSharedPlanSync() {
+  if (b2bState.planSyncTimer) clearInterval(b2bState.planSyncTimer);
+  b2bState.planSyncTimer = setInterval(async () => {
+    if (document.visibilityState !== 'visible' || b2bState.planEditMode) return;
+    if (await loadSharedB2BPlan() && state.currentView === 'month') renderMonth();
+  }, 30000);
+}
+function b2bBaseShift(date, manager) {
+  const src = b2bState.data ? [
     ...(b2bState.data.shifts || []),
     ...(b2bState.data.schedule || [])
   ] : [];
-  const base = sources.find(x => x.date === date && x.manager === manager);
-  if (base) return { ...base, status: base.status || 'planned' };
-  return null;
+  return src.find(x => x.date === date && x.manager === manager) || null;
+}
+function b2bPlanOverride(date, manager) {
+  return b2bState.plan.find(x => x.date === date && x.manager === manager) || null;
+}
+function plannedShift(date, manager) {
+  const override = b2bPlanOverride(date, manager);
+  if (override && override.status === 'removed') return null;
+  if (override) return override;
+  const base = b2bBaseShift(date, manager);
+  return base ? { ...base, status: base.status || 'planned' } : null;
 }
 function b2bManagers() {
   const names = new Set((state.allManagers || []).concat((b2bState.data && b2bState.data.schedule || []).map(x => x.manager)));
@@ -1087,9 +1132,10 @@ async function loadB2B() {
     b2bState.month = b2bState.data.month || b2bState.month;
     b2bState.loaded = true;
     b2bState.error = null;
+    await loadSharedB2BPlan();
     if (state.currentView === 'month') renderMonth();
     renderB2B();
-    renderPlan();
+    startSharedPlanSync();
   } catch (e) {
     b2bState.error = e.message || 'Не удалось загрузить локальные B2B-данные';
     const source = document.getElementById('b2b-source');
@@ -1438,55 +1484,11 @@ function renderB2B() {
   if (sanHost) sanHost.innerHTML = Object.keys(grouped).sort().map(key => { const x = grouped[key]; const pct = x.rented ? Math.round(x.paid / x.rented * 100) : 0; return '<div class="rank"><div class="rank__n">•</div><div class="rank__body"><div class="rank__name">' + esc(key) + ' <span>· ' + x.shifts + ' смены</span></div><div class="rank__track"><div class="rank__fill" style="width:' + pct + '%"></div></div></div><span class="rank__val">' + pct + '%</span></div>'; }).join('');
 }
 
-function renderPlan() {
-  const host = document.getElementById('plan-grid-host');
-  if (!host || !b2bState.loaded) return;
-  const month = b2bState.month;
-  const [year, monthNum] = month.split('-').map(Number);
-  const daysInMonth = new Date(year, monthNum, 0).getDate();
-  const managers = b2bManagers();
-  const sanatoria = (b2bState.data.sanatoria || []).slice();
-  const managerSelect = document.getElementById('plan-manager');
-  const sanSelect = document.getElementById('plan-sanatorium');
-  const selectedManager = managerSelect && managerSelect.options.length ? managerSelect.value : 'all';
-  const selectedSanatorium = sanSelect && sanSelect.options.length ? sanSelect.value : sanatoria[0] || '';
-  if (managerSelect && !managerSelect.options.length) { managerSelect.innerHTML = '<option value="all">Все менеджеры</option>' + managers.map(x => '<option>' + esc(x) + '</option>').join(''); managerSelect.value = selectedManager || 'all'; }
-  if (sanSelect && !sanSelect.options.length) { sanSelect.innerHTML = sanatoria.map(x => '<option>' + esc(x) + '</option>').join(''); sanSelect.value = selectedSanatorium; }
-  let html = '<div class="plan-grid" style="grid-template-columns:220px repeat(' + daysInMonth + ',32px)"><div class="plan-cell plan-cell--head plan-cell--name">Менеджер / санаторий</div>';
-  for (let d = 1; d <= daysInMonth; d++) { const date = `${year}-${String(monthNum).padStart(2, '0')}-${String(d).padStart(2, '0')}`; const wd = new Date(year, monthNum - 1, d).getDay(); html += '<div class="plan-cell plan-cell--head ' + ((wd === 0 || wd === 6) ? 'plan-cell--weekend' : '') + '">' + d + '</div>'; }
-  const visibleManagers = selectedManager && selectedManager !== 'all' ? managers.filter(x => x === selectedManager) : managers;
-  visibleManagers.forEach(manager => {
-    html += '<div class="plan-cell plan-cell--name"><span class="avatar" style="background:' + esc(colorFor(manager)) + ';color:#fff">' + esc(initials(manager)) + '</span><span>' + esc(manager) + '</span></div>';
-    for (let d = 1; d <= daysInMonth; d++) {
-      const date = `${year}-${String(monthNum).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const wd = new Date(year, monthNum - 1, d).getDay();
-      const weekend = wd === 0 || wd === 6;
-      const base = (b2bState.data.schedule || []).find(x => x.date === date && x.manager === manager);
-      const custom = plannedShift(date, manager);
-      const item = custom && custom.status === 'cancelled' ? null : (custom || base);
-      let cls = 'plan-cell', content = '', title = date + ': свободно';
-      if (weekend) { cls += ' plan-cell--weekend'; title = date + ': выходной'; }
-      else if (item) { cls += item.status === 'completed' ? ' plan-cell--completed' : ' plan-cell--planned'; content = '✓'; title = date + ': ' + (item.sanatorium || '') + (custom ? ' · тестовое назначение' : ''); }
-      const clickable = !weekend;
-      html += '<div class="' + cls + '" data-plan-date="' + date + '" data-plan-manager="' + esc(manager) + '" title="' + esc(title) + '" style="cursor:' + (clickable ? 'pointer' : 'default') + '">' + content + '</div>';
-    }
-  });
-  host.innerHTML = html + '</div>';
-  host.querySelectorAll('[data-plan-date]').forEach(cell => cell.addEventListener('click', () => {
-    if (new Date(cell.dataset.planDate + 'T00:00:00').getDay() % 6 === 0) return;
-    const date = cell.dataset.planDate, manager = cell.dataset.planManager;
-    const existing = plannedShift(date, manager);
-    const base = (b2bState.data.schedule || []).find(x => x.date === date && x.manager === manager);
-    if (existing) {
-      if (existing.status === 'cancelled') b2bState.plan = b2bState.plan.filter(x => !(x.date === date && x.manager === manager));
-      else b2bState.plan = b2bState.plan.map(x => x.date === date && x.manager === manager ? { ...x, status: 'cancelled' } : x);
-    } else if (base) {
-      b2bState.plan.push({ date, manager, sanatorium: base.sanatorium, status: 'cancelled' });
-    } else {
-      b2bState.plan.push({ date, manager, sanatorium: selectedSanatorium, status: 'planned' });
-    }
-    writeB2BPlan(); renderPlan();
-  }));
+function nextPlanStatus(status) {
+  if (status === 'planned') return 'completed';
+  if (status === 'completed') return 'cancelled';
+  if (status === 'cancelled') return 'removed';
+  return 'planned';
 }
 
 function renderMonth() {
@@ -1541,10 +1543,15 @@ function renderMonth() {
       let cls = 'heatmap__cell';
       let status = 'Нет активности';
       let content = '';
-      const planItem = plannedShift ? plannedShift(iso, m) : null;
+      const override = b2bPlanOverride(iso, m);
+      const base = b2bBaseShift(iso, m);
+      const isRemoved = !!override && override.status === 'removed';
+      const planItem = isRemoved ? null : (override || (base ? { ...base, status: base.status || 'planned' } : null));
       const canEditCell = b2bState.planEditMode && (selectedManager === 'all' || selectedManager === m);
-      const clickable = canEditCell || !!planItem || (!b2bState.planEditMode && !isWeekend && !isFuture);
-      if (planItem && planItem.status === 'cancelled') {
+      const clickable = canEditCell || !!planItem || (!b2bState.planEditMode && !isFuture);
+      if (isRemoved) {
+        cls += ' heatmap__cell--removed'; status = 'Смена снята с плана'; content = '·';
+      } else if (planItem && planItem.status === 'cancelled') {
         cls += ' heatmap__cell--plan-missed'; status = 'Прогул'; content = '✗';
       } else if (planItem) {
         const planDone = planItem.status === 'completed';
@@ -1621,22 +1628,24 @@ function renderMonth() {
 
 function clickHeatmapCell(dateIso, manager) {
   if (b2bState.planEditMode) {
-  if (b2bState.planEditMode && b2bState.planManager !== 'all' && b2bState.planManager !== manager) return;
-    if (new Date(dateIso + 'T00:00:00').getDay() % 6 === 0) return;
-    const custom = b2bState.plan.find(x => x.date === dateIso && x.manager === manager);
-    const base = !custom ? plannedShift(dateIso, manager) : null;
-    if (!custom && !base) {
-      b2bState.plan.push({ date: dateIso, manager, sanatorium: b2bState.planSanatorium || '', status: 'planned' });
-    } else if (custom) {
-      const next = custom.status === 'planned' ? 'completed' : custom.status === 'completed' ? 'cancelled' : 'planned';
-      if (custom.status === 'cancelled') {
-        b2bState.plan = b2bState.plan.filter(x => !(x.date === dateIso && x.manager === manager));
-      } else {
-        b2bState.plan = b2bState.plan.map(x => x.date === dateIso && x.manager === manager ? { ...x, status: next } : x);
-      }
+    if (b2bState.planManager !== 'all' && b2bState.planManager !== manager) return;
+    const existingIndex = b2bState.plan.findIndex(x => x.date === dateIso && x.manager === manager);
+    const override = existingIndex >= 0 ? b2bState.plan[existingIndex] : null;
+    const base = b2bBaseShift(dateIso, manager);
+    const current = override ? override.status : (base ? (base.status || 'planned') : null);
+    const next = nextPlanStatus(current);
+    const item = {
+      date: dateIso,
+      manager,
+      sanatorium: (override && override.sanatorium) || (base && base.sanatorium) || b2bState.planSanatorium || '',
+      status: next
+    };
+    if (next === 'removed' && !base) {
+      b2bState.plan.splice(existingIndex, 1);
+    } else if (existingIndex >= 0) {
+      b2bState.plan[existingIndex] = { ...b2bState.plan[existingIndex], ...item };
     } else {
-      const next = base.status === 'planned' ? 'completed' : 'cancelled';
-      b2bState.plan.push({ date: dateIso, manager, sanatorium: base.sanatorium || '', status: next });
+      b2bState.plan.push(item);
     }
     writeB2BPlan();
     renderMonth();
