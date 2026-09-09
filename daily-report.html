@@ -1037,7 +1037,19 @@ const state = {
 
 const B2B_PLAN_API_URL = window.B2B_PLAN_API_URL || 'https://impulse.is-a.dev/webchat/api/b2b-plan';
 const b2bState = { data: null, loaded: false, error: null, month: '2026-08', plan: [], planEditMode: false, planManager: 'all', planSanatorium: '', planSyncTimer: null, planApiAvailable: false, planUpdatedAt: null };
+const LEGACY_PLAN_KEYS = new Set([
+  '2026-09-03|Аксененко Е.', '2026-09-07|Алейников В.', '2026-09-14|Богданчикова М.',
+  '2026-09-21|Гаранина Н.', '2026-09-10|Гнездилова Е.', '2026-09-15|Гузеева Н.',
+  '2026-09-11|Дадилова И.', '2026-09-22|Дашивец П.', '2026-09-18|Долгина М.',
+  '2026-09-08|Иванова Т.', '2026-09-25|Кичева В.', '2026-09-12|Кияева Н.',
+  '2026-09-16|Котова В.', '2026-09-05|Маркина С.', '2026-09-20|Морозова А.',
+  '2026-09-01|Петрова М.', '2026-09-13|Сидоров К.', '2026-09-09|Смирнова О.',
+  '2026-09-17|Федорова Д.', '2026-09-24|Чернова Л.'
+]);
 let b2bPlanWriteQueue = Promise.resolve();
+function sanitizePlan(items) {
+  return (Array.isArray(items) ? items : []).filter(item => !LEGACY_PLAN_KEYS.has(String(item.date || '') + '|' + String(item.manager || '')));
+}
 try {
   const xhr = new XMLHttpRequest();
   xhr.open('GET', 'data/b2b-test.json', false);
@@ -1054,7 +1066,8 @@ function cacheB2BPlan() {
 }
 function writeB2BPlan() {
   if (!B2B_PLAN_API_URL) return Promise.resolve(false);
-  const snapshot = b2bState.plan.map(item => ({ ...item }));
+  const snapshot = sanitizePlan(b2bState.plan).map(item => ({ ...item }));
+  b2bState.plan = snapshot;
   b2bPlanWriteQueue = b2bPlanWriteQueue.then(async () => {
     const response = await fetch(B2B_PLAN_API_URL, {
       method: 'PUT',
@@ -1083,7 +1096,7 @@ async function loadSharedB2BPlan() {
     if (!Array.isArray(payload.plan)) throw new Error('invalid shared plan response');
     b2bState.planUpdatedAt = payload.updatedAt || null;
     b2bState.planApiAvailable = true;
-    b2bState.plan = payload.plan;
+    b2bState.plan = sanitizePlan(payload.plan);
     return true;
   } catch (error) {
     b2bState.planApiAvailable = false;
@@ -1098,12 +1111,9 @@ function startSharedPlanSync() {
     if (await loadSharedB2BPlan() && state.currentView === 'month') renderMonth();
   }, 30000);
 }
-function b2bBaseShift(date, manager) {
-  const src = b2bState.data ? [
-    ...(b2bState.data.shifts || []),
-    ...(b2bState.data.schedule || [])
-  ] : [];
-  return src.find(x => x.date === date && x.manager === manager) || null;
+function b2bBaseShift(_date, _manager) {
+  // The heatmap has no seeded plan. Actual completed facts come from Google Sheets.
+  return null;
 }
 function b2bPlanOverride(date, manager) {
   return b2bState.plan.find(x => x.date === date && x.manager === manager) || null;
@@ -1543,15 +1553,12 @@ function renderMonth() {
       let cls = 'heatmap__cell';
       let status = 'Нет активности';
       let content = '';
-      const override = b2bPlanOverride(iso, m);
-      const base = b2bBaseShift(iso, m);
-      const isRemoved = !!override && override.status === 'removed';
-      const planItem = isRemoved ? null : (override || (base ? { ...base, status: base.status || 'planned' } : null));
+      const rawPlanItem = b2bPlanOverride(iso, m);
+      const isRemoved = !!rawPlanItem && rawPlanItem.status === 'removed';
+      const planItem = isRemoved ? null : rawPlanItem;
       const canEditCell = b2bState.planEditMode && (selectedManager === 'all' || selectedManager === m);
       const clickable = canEditCell || !!planItem || (!b2bState.planEditMode && !isFuture);
-      if (isRemoved) {
-        cls += ' heatmap__cell--removed'; status = 'Смена снята с плана'; content = '·';
-      } else if (planItem && planItem.status === 'cancelled') {
+      if (planItem && planItem.status === 'cancelled') {
         cls += ' heatmap__cell--plan-missed'; status = 'Прогул'; content = '✗';
       } else if (planItem) {
         const planDone = planItem.status === 'completed';
@@ -1612,18 +1619,8 @@ function renderMonth() {
   const resetPlan = document.getElementById('plan-reset-month');
   if (resetPlan) resetPlan.addEventListener('click', () => {
     const monthPrefix = month + '-';
-    const baseShifts = b2bState.data ? [
-      ...(b2bState.data.shifts || []),
-      ...(b2bState.data.schedule || [])
-    ].filter(x => String(x.date || '').startsWith(monthPrefix)) : [];
-    const outsideMonth = b2bState.plan.filter(x => !String(x.date || '').startsWith(monthPrefix));
-    const removedBaseShifts = baseShifts.map(x => ({
-      date: x.date,
-      manager: x.manager,
-      sanatorium: x.sanatorium || '',
-      status: 'removed'
-    }));
-    b2bState.plan = outsideMonth.concat(removedBaseShifts);
+    // Clear only explicit plan entries; Google Sheets facts are never part of this array.
+    b2bState.plan = b2bState.plan.filter(x => !String(x.date || '').startsWith(monthPrefix));
     writeB2BPlan();
     renderMonth();
   });
@@ -1642,16 +1639,14 @@ function clickHeatmapCell(dateIso, manager) {
     if (b2bState.planManager !== 'all' && b2bState.planManager !== manager) return;
     const existingIndex = b2bState.plan.findIndex(x => x.date === dateIso && x.manager === manager);
     const override = existingIndex >= 0 ? b2bState.plan[existingIndex] : null;
-    const base = b2bBaseShift(dateIso, manager);
-    const current = override ? override.status : (base ? (base.status || 'planned') : null);
-    const next = nextPlanStatus(current);
-    const item = {
+    const current = override ? override.status : null;
+    const next = nextPlanStatus(current);    const item = {
       date: dateIso,
       manager,
-      sanatorium: (override && override.sanatorium) || (base && base.sanatorium) || b2bState.planSanatorium || '',
+      sanatorium: (override && override.sanatorium) || b2bState.planSanatorium || '',
       status: next
     };
-    if (next === 'removed' && !base) {
+    if (next === 'removed') {
       b2bState.plan.splice(existingIndex, 1);
     } else if (existingIndex >= 0) {
       b2bState.plan[existingIndex] = { ...b2bState.plan[existingIndex], ...item };
