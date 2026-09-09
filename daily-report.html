@@ -1540,15 +1540,15 @@ function renderMonth() {
   const selectedManager = b2bState.planManager;
   const selectedSanatorium = b2bState.planSanatorium;
   let html = '<div class="plan-controls" aria-label="Управление планом">' +
-    '<label class="plan-controls__toggle"><input type="checkbox" id="plan-edit-toggle"' + (b2bState.planEditMode ? ' checked' : '') + (!B2B_PLAN_API_URL ? ' disabled' : '') + '> <span>Редактировать план</span></label>' +
+    '<label class="plan-controls__toggle"><input type="checkbox" id="plan-edit-toggle"' + (b2bState.planEditMode ? ' checked' : '') + '> <span>Редактировать план</span></label>' +
     '<label class="plan-controls__field">Менеджер<select id="plan-manager-select"' + (b2bState.planEditMode ? '' : ' disabled') + '><option value="all">Все менеджеры</option>' +
       managers.map(m => '<option value="' + esc(m) + '"' + (m === selectedManager ? ' selected' : '') + '>' + esc(m) + '</option>').join('') +
     '</select></label>' +
     '<label class="plan-controls__field">Санаторий<select id="plan-sanatorium-select"' + (b2bState.planEditMode ? '' : ' disabled') + '>' +
       (sanatoria.length ? sanatoria.map(s => '<option value="' + esc(s) + '"' + (s === selectedSanatorium ? ' selected' : '') + '>' + esc(s) + '</option>').join('') : '<option value="">Без санатория</option>') +
     '</select></label>' +
-    '<button type="button" class="btn btn--sm plan-controls__reset" id="plan-reset-month"' + (!B2B_PLAN_API_URL ? ' disabled' : '') + '>Очистить месяц</button>' +
-    '<span class="plan-controls__hint">' + (b2bState.planApiAvailable ? 'Изменения сохраняются на сервере и видны на всех устройствах' : 'API плана недоступен — изменения не сохранятся') + '</span>' +
+    '<button type="button" class="btn btn--sm plan-controls__reset" id="plan-reset-month">Очистить месяц</button>' +
+    '<span class="plan-controls__hint">' + (b2bState.planApiAvailable ? 'Изменения сохраняются на сервере и видны на всех устройствах' : 'Режим доступен; сервер хранения плана пока не подключен') + '</span>' +
   '</div>';
   html += '<div class="heatmap" style="grid-template-columns:220px repeat(' + daysInMonth + ',32px)">';
   html += '<div class="heatmap__cell heatmap__cell--name" style="font-weight:600;color:var(--txt-3)">Менеджер</div>';
