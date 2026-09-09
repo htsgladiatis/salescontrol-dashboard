@@ -1036,10 +1036,10 @@ const state = {
   NEW_TOAST_MIN_INTERVAL_MS: 30000,
 };
 
-// GitHub Pages is static: the Apps Script web-app URL is injected at deploy time.
-const B2B_PLAN_API_URL = String(window.B2B_PLAN_API_URL || '').trim();
-const b2bState = { data: null, loaded: false, error: null, month: '2026-08', plan: [], planEditMode: false, planManager: 'all', planSanatorium: '', planSyncTimer: null, planApiAvailable: false, planUpdatedAt: null };
-let b2bPlanWriteQueue = Promise.resolve();
+// The monthly plan is read-only from the public Google Sheets CSV export.
+const B2B_PLAN_SHEET_GID = 217078464;
+const B2B_PLAN_CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=${B2B_PLAN_SHEET_GID}`;
+const b2bState = { data: null, loaded: false, error: null, month: '2026-08', plan: [], planSyncTimer: null, planApiAvailable: false, planUpdatedAt: null };
 function normalizePlanDate(value) {
   const text = String(value == null ? '' : value).trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
@@ -1073,56 +1073,42 @@ try {
   }
 } catch (e) { /* fallback: loadB2B() will retry async */ }
 
-function cacheB2BPlan() {
-  // The plan is persisted by the shared HTTPS API, never in browser storage.
+function parsePlanStatus(value) {
+  const text = String(value == null ? '' : value).trim().toLowerCase();
+  if (['completed', 'выполнено', 'готово', 'факт'].includes(text)) return 'completed';
+  if (['cancelled', 'cancel', 'cancelled', 'отмена', 'прогул'].includes(text)) return 'cancelled';
+  return 'planned';
 }
-function writeB2BPlan() {
-  const snapshot = sanitizePlan(b2bState.plan).map(item => ({ ...item }));
-  b2bPlanWriteQueue = b2bPlanWriteQueue.then(async () => {
-    if (!B2B_PLAN_API_URL) {
-      b2bState.planApiAvailable = false;
-      showToast('⚠️ API не настроен: план показан только до перезагрузки', true);
-      return false;
-    }
-    const response = await fetch(B2B_PLAN_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ plan: snapshot })
-    });
-    if (!response.ok) throw new Error('HTTP ' + response.status);
-    const payload = await response.json();
-    if (payload.ok === false) throw new Error(payload.error || 'Apps Script API error');
-    b2bState.planApiAvailable = true;
-    b2bState.planUpdatedAt = payload.updatedAt || b2bState.planUpdatedAt;
-    showToast('✅ План сохранён на сервере');
-    return true;
-  }).catch(async error => {
-    b2bState.planApiAvailable = false;
-    console.error('shared plan save error:', error);
-    await loadSharedB2BPlan();
-    if (state.currentView === 'month') renderMonth();
-    showToast('⚠️ План не сохранён: проверьте API Apps Script', true);
-    return false;
-  });
-  return b2bPlanWriteQueue;
+function parseB2BPlanCSV(text) {
+  const rows = parseCSV(text);
+  if (!rows.length) return [];
+  const header = rows[0].map(value => String(value || '').trim().toLowerCase());
+  const findIndex = (names, fallback) => {
+    const index = header.findIndex(value => names.includes(value));
+    return index >= 0 ? index : fallback;
+  };
+  const dateIndex = findIndex(['дата', 'date'], 0);
+  const managerIndex = findIndex(['менеджер', 'manager', 'сотрудник'], 1);
+  const sanatoriumIndex = findIndex(['санаторий', 'санаторий/точка', 'sanatorium', 'точка'], 2);
+  const statusIndex = findIndex(['статус', 'status', 'состояние'], 3);
+  return rows.slice(1).map(row => ({
+    date: normalizePlanDate(row[dateIndex]),
+    manager: String(row[managerIndex] || '').trim(),
+    sanatorium: String(row[sanatoriumIndex] || 'Без санатория').trim() || 'Без санатория',
+    status: parsePlanStatus(row[statusIndex])
+  }));
 }
 async function loadSharedB2BPlan() {
-  if (!B2B_PLAN_API_URL) {
-    b2bState.planApiAvailable = false;
-    return false;
-  }
   try {
-    const response = await fetch(B2B_PLAN_API_URL, { cache: 'no-store' });
+    const response = await fetch(B2B_PLAN_CSV_URL + '&_=' + Date.now(), { cache: 'no-store' });
     if (!response.ok) throw new Error('HTTP ' + response.status);
-    const payload = await response.json();
-    if (!Array.isArray(payload.plan)) throw new Error('Некорректный ответ API плана');
     b2bState.planApiAvailable = true;
-    b2bState.plan = sanitizePlan(payload.plan);
-    b2bState.planUpdatedAt = payload.updatedAt || null;
+    b2bState.plan = sanitizePlan(parseB2BPlanCSV(await response.text()));
+    b2bState.planUpdatedAt = new Date().toISOString();
     return true;
   } catch (error) {
     b2bState.planApiAvailable = false;
-    console.warn('shared plan load error:', error.message);
+    console.warn('Google Sheets plan load error:', error.message);
     return false;
   }
 }
@@ -1537,20 +1523,8 @@ function renderMonth() {
   document.getElementById('month-label').textContent = ml;
   if (!totalManagers) { host.innerHTML = '<div class="empty-state">📭 Справочник менеджеров пуст</div>'; return; }
 
-  const managers = b2bManagers();
-  const sanatoria = (b2bState.data && b2bState.data.sanatoria || []).slice();
-  const selectedManager = b2bState.planManager;
-  const selectedSanatorium = b2bState.planSanatorium;
-  let html = '<div class="plan-controls" aria-label="Управление планом">' +
-    '<label class="plan-controls__toggle"><input type="checkbox" id="plan-edit-toggle"' + (b2bState.planEditMode ? ' checked' : '') + '> <span>Редактировать план</span></label>' +
-    '<label class="plan-controls__field">Менеджер<select id="plan-manager-select"' + (b2bState.planEditMode ? '' : ' disabled') + '><option value="all">Все менеджеры</option>' +
-      managers.map(m => '<option value="' + esc(m) + '"' + (m === selectedManager ? ' selected' : '') + '>' + esc(m) + '</option>').join('') +
-    '</select></label>' +
-    '<label class="plan-controls__field">Санаторий<select id="plan-sanatorium-select"' + (b2bState.planEditMode ? '' : ' disabled') + '>' +
-      (sanatoria.length ? sanatoria.map(s => '<option value="' + esc(s) + '"' + (s === selectedSanatorium ? ' selected' : '') + '>' + esc(s) + '</option>').join('') : '<option value="">Без санатория</option>') +
-    '</select></label>' +
-    '<button type="button" class="btn btn--sm plan-controls__reset" id="plan-reset-month">Очистить месяц</button>' +
-    '<span class="plan-controls__hint">' + (b2bState.planApiAvailable ? 'Изменения сохраняются на сервере и видны на всех устройствах' : 'Режим доступен; сервер хранения плана пока не подключен') + '</span>' +
+  let html = '<div class="plan-controls" aria-label="Источник плана">' +
+    '<span class="plan-controls__hint">План загружается из Google Sheets, вкладка «План». Меняйте строки в таблице — dashboard обновится автоматически.</span>' +
   '</div>';
   html += '<div class="heatmap" style="grid-template-columns:220px repeat(' + daysInMonth + ',32px)">';
   html += '<div class="heatmap__cell heatmap__cell--name" style="font-weight:600;color:var(--txt-3)">Менеджер</div>';
@@ -1576,8 +1550,7 @@ function renderMonth() {
       let status = 'Нет активности';
       let content = '';
       const planItem = b2bPlanOverride(iso, m);
-      const canEditCell = b2bState.planEditMode && (selectedManager === 'all' || selectedManager === m);
-      const clickable = canEditCell || !!planItem || (!b2bState.planEditMode && !isFuture);
+      const clickable = false;
       if (planItem && planItem.status === 'cancelled') {
         cls += ' heatmap__cell--plan-missed'; status = 'Прогул'; content = '✗';
       } else if (planItem) {
@@ -1628,54 +1601,9 @@ function renderMonth() {
       if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); if (cell.getAttribute('role') === 'button') clickHeatmapCell(cell.dataset.heatmapDate, cell.dataset.heatmapManager); }
     });
   });
-  const editToggle = document.getElementById('plan-edit-toggle');
-  const managerSelect = document.getElementById('plan-manager-select');
-  const sanatoriumSelect = document.getElementById('plan-sanatorium-select');
-  if (editToggle) editToggle.addEventListener('change', () => {
-    b2bState.planEditMode = editToggle.checked;
-    renderMonth();
-  });
-  const resetPlan = document.getElementById('plan-reset-month');
-  if (resetPlan) resetPlan.addEventListener('click', () => {
-    if (!confirm('Очистить только план за ' + month + '? Фактические зелёные отчёты не изменятся.')) return;
-    b2bState.plan = b2bState.plan.filter(x => !String(x.date || '').startsWith(month + '-'));
-    writeB2BPlan();
-    renderMonth();
-  });
-  if (managerSelect) managerSelect.addEventListener('change', () => {
-    b2bState.planManager = managerSelect.value;
-    renderMonth();
-  });
-  if (sanatoriumSelect) sanatoriumSelect.addEventListener('change', () => {
-    b2bState.planSanatorium = sanatoriumSelect.value;
-  });
   renderTicker();
 }
 
-function clickHeatmapCell(dateIso, manager) {
-  if (b2bState.planEditMode) {
-    if (b2bState.planManager !== 'all' && b2bState.planManager !== manager) return;
-    const existingIndex = b2bState.plan.findIndex(x => x.date === dateIso && x.manager === manager);
-    const override = existingIndex >= 0 ? b2bState.plan[existingIndex] : null;
-    const next = override ? nextPlanStatus(override.status) : 'planned';
-    const item = {
-      date: dateIso,
-      manager,
-      sanatorium: (override && override.sanatorium) || b2bState.planSanatorium || (b2bState.data && b2bState.data.sanatoria && b2bState.data.sanatoria[0]) || 'Без санатория',
-      status: next
-    };
-    if (next === 'removed') b2bState.plan.splice(existingIndex, 1);
-    else if (existingIndex >= 0) b2bState.plan[existingIndex] = item;
-    else b2bState.plan.push(item);
-    writeB2BPlan();
-    renderMonth();
-    return;
-  }
-  state.currentDate = dateIso;
-  document.getElementById('report-date').value = dateIso;
-  switchView('daily');
-  renderDaily();
-}
 
 function switchView(view) {
   state.currentView = view;
