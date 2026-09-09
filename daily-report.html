@@ -1612,7 +1612,18 @@ function renderMonth() {
   const resetPlan = document.getElementById('plan-reset-month');
   if (resetPlan) resetPlan.addEventListener('click', () => {
     const monthPrefix = month + '-';
-    b2bState.plan = b2bState.plan.filter(x => !String(x.date || '').startsWith(monthPrefix));
+    const baseShifts = b2bState.data ? [
+      ...(b2bState.data.shifts || []),
+      ...(b2bState.data.schedule || [])
+    ].filter(x => String(x.date || '').startsWith(monthPrefix)) : [];
+    const outsideMonth = b2bState.plan.filter(x => !String(x.date || '').startsWith(monthPrefix));
+    const removedBaseShifts = baseShifts.map(x => ({
+      date: x.date,
+      manager: x.manager,
+      sanatorium: x.sanatorium || '',
+      status: 'removed'
+    }));
+    b2bState.plan = outsideMonth.concat(removedBaseShifts);
     writeB2BPlan();
     renderMonth();
   });
