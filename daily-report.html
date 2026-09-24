@@ -614,8 +614,27 @@ a.nav__item{text-decoration:none}
 .heatmap__cell--plan-done{background:var(--pos);color:#0b0f08;font-weight:700}
 .heatmap__cell--plan-missed{background:var(--neg);color:#fff;font-weight:700}
 .heatmap__cell--removed{background:var(--surface-3);color:var(--txt-3);font-style:italic}
-.heatmap__cell[role="button"]{cursor:pointer;transition:transform .16s var(--ease),border-color .16s var(--ease)}
+.heatmap__cell[role="button"]{cursor:pointer;transition:transform .16s var(--ease),border-color .16s var(--ease);min-width:32px;min-height:32px}
 .heatmap__cell[role="button"]:hover,.heatmap__cell[role="button"]:focus-visible{transform:translateY(-2px);border:1px solid var(--lime);outline:none}
+.plan-source-status{font-size:var(--fs-xs);color:var(--txt-3);margin-left:auto}
+.plan-source-status--error{color:var(--neg)}
+.plan-modal[hidden]{display:none}
+.plan-modal{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:12px}
+.plan-modal__backdrop{position:absolute;inset:0;background:rgba(0,0,0,.68)}
+.plan-modal__dialog{position:relative;width:min(520px,calc(100vw - 24px));padding:24px;border:1px solid var(--line-strong);border-radius:var(--r);background:var(--surface);box-shadow:var(--shadow)}
+.plan-modal__dialog h2{font-size:20px;margin-bottom:6px}
+.plan-modal__context{margin:0 0 20px;color:var(--txt-2);font-size:var(--fs-sm)}
+.plan-modal__dialog label{display:block;margin-bottom:6px;color:var(--txt-2);font-size:var(--fs-sm);font-weight:600}
+.plan-modal__dialog select{width:100%;min-height:44px;padding:0 12px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface-2);color:var(--txt)}
+.plan-status{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}
+.plan-status button{min-height:44px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface-2);color:var(--txt-2);cursor:pointer}
+.plan-status button.active{border-color:var(--lime);background:var(--accent-soft);color:var(--txt);font-weight:700}
+.plan-modal__error{margin:14px 0 0;color:var(--neg);font-size:var(--fs-sm)}
+.plan-modal__actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:24px}
+.plan-modal__actions button{min-height:44px;padding:0 14px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface-2);color:var(--txt);cursor:pointer}
+.plan-modal__actions .btn--primary{background:var(--lime);border-color:transparent;color:var(--lime-ink);font-weight:700}
+.plan-modal__actions #plan-delete{margin-right:auto;color:var(--neg)}
+body.plan-modal-open{overflow:hidden}
 .heatmap-legend{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:var(--sp-3);font-size:var(--fs-xs);color:var(--txt-3)}
 .heatmap-legend__item{display:inline-flex;align-items:center;gap:6px}
 .heatmap-legend__dot{width:12px;height:12px;border-radius:4px;background:var(--surface-2);border:1px solid var(--line)}
@@ -839,7 +858,7 @@ a.nav__item{text-decoration:none}
           <button class="report-home__card" type="button" data-home-view="month">
             <span class="report-home__num">3 · ПЛАН</span>
             <span class="report-home__title">План менеджеров</span>
-            <span class="report-home__text">Оранжевый — запланировано, зелёный — отработано, красный — прогул. Клик по ячейке меняет статус.</span>
+            <span class="report-home__text">Оранжевый — запланировано, зелёный — отработано, красный — прогул. Нажмите на ячейку, чтобы изменить смену.</span>
             <span class="report-home__action">Открыть месяц →</span>
           </button>
         </section>
@@ -913,7 +932,8 @@ a.nav__item{text-decoration:none}
           <article class="card" style="margin-bottom:var(--sp-4)">
             <div class="report-table__header">
               <div class="report-table__title" id="heatmap-title">—</div>
-              <span class="report-table__hint">Для плана включите редактирование ниже; обычный клик открывает день</span>
+              <span class="report-table__hint">Нажмите на ячейку, чтобы добавить или изменить смену</span>
+              <span class="plan-source-status" id="plan-source-status">План: VPS · загрузка…</span>
             </div>
             <div id="heatmap-host" class="heatmap-wrap"></div>
             <div class="heatmap-legend" aria-label="Обозначения heatmap">
@@ -926,6 +946,26 @@ a.nav__item{text-decoration:none}
           </article>
           <div class="heatmap-tip" id="heatmap-tip" role="status" aria-live="polite"></div>
         </section>
+
+        <div class="plan-modal" id="plan-modal" hidden aria-hidden="true">
+          <div class="plan-modal__backdrop" data-close-plan></div>
+          <section class="plan-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="plan-modal-title">
+            <h2 id="plan-modal-title">Смена менеджера</h2>
+            <p class="plan-modal__context"><span id="plan-manager"></span> · <span id="plan-date"></span></p>
+            <label for="plan-sanatorium">Санаторий</label>
+            <select id="plan-sanatorium"></select>
+            <div class="plan-status" role="group" aria-label="Статус смены">
+              <button type="button" id="plan-status-planned" data-status="planned" aria-pressed="true">Запланировано</button>
+              <button type="button" id="plan-status-completed" data-status="completed" aria-pressed="false">Выполнено</button>
+            </div>
+            <p class="plan-modal__error" id="plan-error" role="alert" hidden></p>
+            <div class="plan-modal__actions">
+              <button type="button" id="plan-delete" hidden>Удалить смену</button>
+              <button type="button" id="plan-cancel">Отмена</button>
+              <button type="button" id="plan-save" class="btn--primary">Сохранить</button>
+            </div>
+          </section>
+        </div>
 
         <section id="view-b2b" style="display:none">
           <div class="report-table__header" style="margin-bottom:var(--sp-4)">
@@ -962,6 +1002,335 @@ a.nav__item{text-decoration:none}
 </div>
 
 <script>
+/* ============================================================
+   SalesControl — shared VPS plan editor
+   The monthly plan is shared state. Google Sheets remains facts-only.
+   ============================================================ */
+const PLAN_API_BASE = (typeof window !== 'undefined' && window.B2B_PLAN_API_URL) || 'https://109-69-22-112.nip.io/plan-api';
+const PLAN_API_TIMEOUT_MS = 15000;
+const PLAN_SYNC_INTERVAL_MS = 15000;
+const PLAN_UNSPECIFIED = 'Не указан';
+
+const planEditorState = {
+  loaded: false,
+  error: null,
+  plan: [],
+  reference: { managers: [], sanatoria: [] },
+  updatedAt: null,
+  syncTimer: null,
+  modal: null,
+  originCell: null,
+  status: 'planned',
+  initialized: false,
+  saving: false,
+};
+
+function planIsoDate(value) {
+  const text = String(value == null ? '' : value).trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : '';
+}
+
+function planSort(items, key) {
+  return items.slice().sort((a, b) => String(a[key] || '').localeCompare(String(b[key] || ''), 'ru'));
+}
+
+function normalizePlanApi(items) {
+  const byKey = new Map();
+  for (const item of Array.isArray(items) ? items : []) {
+    const date = planIsoDate(item && item.date);
+    const manager = String(item && item.manager || '').trim();
+    const sanatorium = String(item && item.sanatorium || PLAN_UNSPECIFIED).trim() || PLAN_UNSPECIFIED;
+    const status = String(item && item.status || '').trim();
+    if (!date || !manager || !['planned', 'completed'].includes(status)) continue;
+    byKey.set(`${date}|${manager}`, { date, manager, sanatorium, status, updatedAt: item.updatedAt || null });
+  }
+  return Array.from(byKey.values()).sort((a, b) => a.date.localeCompare(b.date) || a.manager.localeCompare(b.manager, 'ru'));
+}
+
+function normalizePlanReference(reference) {
+  const source = reference && typeof reference === 'object' ? reference : {};
+  const managers = Array.from(new Set((Array.isArray(source.managers) ? source.managers : []).map(x => String(x || '').trim()).filter(Boolean)));
+  const sanatoria = Array.from(new Set((Array.isArray(source.sanatoria) ? source.sanatoria : []).map(x => String(x || '').trim()).filter(Boolean)));
+  if (!sanatoria.includes(PLAN_UNSPECIFIED)) sanatoria.push(PLAN_UNSPECIFIED);
+  return {
+    managers: planSort(managers.map(name => ({ name })), 'name').map(x => x.name),
+    sanatoria: planSort(sanatoria.map(name => ({ name })), 'name').map(x => x.name),
+  };
+}
+
+function moscowDateKey(now) {
+  const date = now instanceof Date ? now : new Date(now || Date.now());
+  if (Number.isNaN(date.getTime())) return '';
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Moscow', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function resolvePlanCell(planEntry, hasReport, isoDate, now = new Date()) {
+  const date = planIsoDate(isoDate);
+  if (!date) return 'empty';
+  if (hasReport || (planEntry && planEntry.status === 'completed')) return 'completed';
+  if (!planEntry) return 'empty';
+  return date < moscowDateKey(now) ? 'missed' : 'planned';
+}
+
+function planEntryFor(date, manager) {
+  const iso = planIsoDate(date);
+  return planEditorState.plan.find(item => item.date === iso && item.manager === manager) || null;
+}
+
+function planningManagers() {
+  const names = planEditorState.reference.managers.length
+    ? planEditorState.reference.managers.slice()
+    : (Array.isArray(state.allManagers) ? state.allManagers.slice() : []);
+  return planSort(names.map(name => ({ name })), 'name').map(x => x.name);
+}
+
+function planHasReport(date, manager) {
+  const stats = state.managerStats && state.managerStats[manager];
+  return Boolean(stats && stats.perDayCount && stats.perDayCount[date]);
+}
+
+function planCellState(date, manager, now = new Date()) {
+  return resolvePlanCell(planEntryFor(date, manager), planHasReport(date, manager), date, now);
+}
+
+async function planRequest(path, options = {}) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), PLAN_API_TIMEOUT_MS);
+  try {
+    const headers = Object.assign({ Accept: 'application/json' }, options.headers || {});
+    if (options.body !== undefined) headers['Content-Type'] = 'application/json';
+    const response = await fetch(PLAN_API_BASE + path, {
+      method: options.method || 'GET',
+      headers,
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      cache: 'no-store',
+      signal: controller.signal,
+    });
+    let payload = null;
+    try { payload = await response.json(); } catch (_) { /* handled below */ }
+    if (!response.ok || !payload || payload.ok === false) {
+      throw new Error(payload && payload.error ? payload.error : `HTTP ${response.status}`);
+    }
+    return payload;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+function applyPlanPayload(payload) {
+  if (!payload || payload.ok === false) throw new Error('Некорректный ответ Plan API');
+  planEditorState.plan = normalizePlanApi(payload.plan);
+  planEditorState.reference = normalizePlanReference(payload.reference);
+  planEditorState.updatedAt = payload.updatedAt || null;
+  planEditorState.error = null;
+  planEditorState.loaded = true;
+  if (typeof b2bState !== 'undefined') {
+    b2bState.plan = planEditorState.plan.slice();
+    b2bState.planApiAvailable = true;
+    b2bState.planUpdatedAt = planEditorState.updatedAt;
+  }
+  updatePlanSourceStatus();
+}
+
+async function loadPlanApi() {
+  try {
+    const payload = await planRequest('/api/plan');
+    applyPlanPayload(payload);
+    return true;
+  } catch (error) {
+    planEditorState.error = error.name === 'AbortError' ? 'Таймаут Plan API' : error.message;
+    updatePlanSourceStatus();
+    if (typeof b2bState !== 'undefined') b2bState.planApiAvailable = false;
+    return false;
+  }
+}
+
+function startPlanApiSync() {
+  if (planEditorState.syncTimer) clearInterval(planEditorState.syncTimer);
+  planEditorState.syncTimer = setInterval(async () => {
+    if (document.visibilityState !== 'visible') return;
+    const changed = await loadPlanApi();
+    if (changed && state.currentView === 'month') renderMonth();
+  }, PLAN_SYNC_INTERVAL_MS);
+}
+
+function updatePlanSourceStatus() {
+  const el = document.getElementById('plan-source-status');
+  if (!el) return;
+  if (planEditorState.error) {
+    el.textContent = 'План: VPS недоступен — ' + planEditorState.error;
+    el.className = 'plan-source-status plan-source-status--error';
+    return;
+  }
+  const time = planEditorState.updatedAt
+    ? new Date(planEditorState.updatedAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+    : '—';
+  el.textContent = 'План: VPS · обновлено ' + time;
+  el.className = 'plan-source-status';
+}
+
+function planStatusText(cellState) {
+  if (cellState === 'completed') return 'Выполнено или есть отчёт';
+  if (cellState === 'missed') return 'Прогул: отчёта нет';
+  if (cellState === 'planned') return 'Запланировано';
+  return 'Нет плана и отчёта';
+}
+
+function setPlanStatus(status) {
+  planEditorState.status = status === 'completed' ? 'completed' : 'planned';
+  for (const id of ['plan-status-planned', 'plan-status-completed']) {
+    const button = document.getElementById(id);
+    if (!button) continue;
+    const active = button.dataset.status === planEditorState.status;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  }
+}
+
+function fillPlanSanatoria(selected) {
+  const select = document.getElementById('plan-sanatorium');
+  if (!select) return;
+  const values = planEditorState.reference.sanatoria.length ? planEditorState.reference.sanatoria : [PLAN_UNSPECIFIED];
+  select.innerHTML = values.map(name => '<option value="' + esc(name) + '">' + esc(name) + '</option>').join('');
+  if (values.includes(selected)) select.value = selected;
+  else select.value = PLAN_UNSPECIFIED;
+}
+
+function closePlanEditor() {
+  const modal = document.getElementById('plan-modal');
+  if (!modal) return;
+  modal.hidden = true;
+  modal.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('plan-modal-open');
+  if (planEditorState.originCell && typeof planEditorState.originCell.focus === 'function') planEditorState.originCell.focus();
+  planEditorState.originCell = null;
+  planEditorState.saving = false;
+}
+
+function setPlanError(message) {
+  const error = document.getElementById('plan-error');
+  if (error) {
+    error.textContent = message || '';
+    error.hidden = !message;
+  }
+  const save = document.getElementById('plan-save');
+  if (save) {
+    save.disabled = false;
+    save.textContent = 'Сохранить';
+  }
+  planEditorState.saving = false;
+}
+
+function openPlanEditor(date, manager, originCell) {
+  const modal = document.getElementById('plan-modal');
+  if (!modal) return;
+  const entry = planEntryFor(date, manager);
+  planEditorState.originCell = originCell || null;
+  document.getElementById('plan-manager').textContent = manager;
+  document.getElementById('plan-date').textContent = formatDateHuman(date);
+  fillPlanSanatoria(entry ? entry.sanatorium : PLAN_UNSPECIFIED);
+  setPlanStatus(entry ? entry.status : 'planned');
+  const deleteButton = document.getElementById('plan-delete');
+  if (deleteButton) {
+    deleteButton.hidden = !entry;
+    deleteButton.textContent = 'Удалить смену';
+    deleteButton.dataset.confirmed = 'false';
+  }
+  setPlanError('');
+  modal.hidden = false;
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('plan-modal-open');
+  const select = document.getElementById('plan-sanatorium');
+  if (select) select.focus();
+}
+
+async function savePlanCell() {
+  if (planEditorState.saving) return;
+  const modal = document.getElementById('plan-modal');
+  if (!modal || modal.hidden) return;
+  const manager = document.getElementById('plan-manager').textContent.trim();
+  const date = planEditorState.originCell && planEditorState.originCell.dataset.heatmapDate;
+  const sanatorium = document.getElementById('plan-sanatorium').value;
+  const save = document.getElementById('plan-save');
+  if (!date || !manager) return setPlanError('Не удалось определить ячейку.');
+  planEditorState.saving = true;
+  if (save) { save.disabled = true; save.textContent = 'Сохраняем…'; }
+  setPlanError('');
+  try {
+    const payload = await planRequest('/api/plan/cell', {
+      method: 'PUT',
+      body: { date, manager, sanatorium, status: planEditorState.status },
+    });
+    applyPlanPayload(payload);
+    closePlanEditor();
+    if (state.currentView === 'month') renderMonth();
+    showToast('Смена сохранена');
+  } catch (error) {
+    setPlanError(error.message || 'Не удалось сохранить смену');
+    showToast('Не удалось сохранить. Повторите', true);
+  }
+}
+
+async function deletePlanCell() {
+  if (planEditorState.saving) return;
+  const button = document.getElementById('plan-delete');
+  const manager = document.getElementById('plan-manager').textContent.trim();
+  const date = planEditorState.originCell && planEditorState.originCell.dataset.heatmapDate;
+  if (!button || !date || !manager) return;
+  if (button.dataset.confirmed !== 'true') {
+    button.dataset.confirmed = 'true';
+    button.textContent = 'Точно удалить?';
+    return;
+  }
+  planEditorState.saving = true;
+  button.disabled = true;
+  try {
+    const payload = await planRequest('/api/plan/cell', {
+      method: 'DELETE',
+      body: { date, manager },
+    });
+    applyPlanPayload(payload);
+    closePlanEditor();
+    if (state.currentView === 'month') renderMonth();
+    showToast('Смена удалена');
+  } catch (error) {
+    setPlanError(error.message || 'Не удалось удалить смену');
+    showToast('Не удалось удалить. Повторите', true);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function initPlanEditor() {
+  if (planEditorState.initialized) return;
+  planEditorState.initialized = true;
+  const modal = document.getElementById('plan-modal');
+  if (!modal) return;
+  document.getElementById('plan-save').addEventListener('click', savePlanCell);
+  document.getElementById('plan-cancel').addEventListener('click', closePlanEditor);
+  document.getElementById('plan-delete').addEventListener('click', deletePlanCell);
+  document.getElementById('plan-status-planned').addEventListener('click', () => setPlanStatus('planned'));
+  document.getElementById('plan-status-completed').addEventListener('click', () => setPlanStatus('completed'));
+  modal.querySelector('[data-close-plan]').addEventListener('click', closePlanEditor);
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !modal.hidden) closePlanEditor();
+  });
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    PLAN_API_BASE,
+    moscowDateKey,
+    normalizePlanApi,
+    normalizePlanReference,
+    resolvePlanCell,
+  };
+}
+
 /* ============================================================
    SalesControl — Отчёты РОПа · live layer
    Данные: Google Sheets /export?format=csv, gid=0 (Продажи_Заголовки).
@@ -1036,31 +1405,19 @@ const state = {
   NEW_TOAST_MIN_INTERVAL_MS: 30000,
 };
 
-// The monthly plan is read-only from the public Google Sheets CSV export.
-const B2B_PLAN_SHEET_GID = 217078464;
-const B2B_PLAN_CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=${B2B_PLAN_SHEET_GID}`;
-const b2bState = { data: null, loaded: false, error: null, month: '2026-08', plan: [], planSyncTimer: null, planApiAvailable: false, planUpdatedAt: null };
-function normalizePlanDate(value) {
-  const text = String(value == null ? '' : value).trim();
-  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
-  const display = /^(\d{1,2})[./](\d{1,2})[./](\d{4})$/.exec(text);
-  if (display) return `${display[3]}-${display[2].padStart(2, '0')}-${display[1].padStart(2, '0')}`;
-  const parsed = new Date(text);
-  if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
-  return '';
+// План хранится на VPS. Google Sheets ниже остаётся только источником фактов.
+const b2bState = { data: null, loaded: false, error: null, month: '2026-09', plan: [], planSyncTimer: null, planApiAvailable: false, planUpdatedAt: null };
+function b2bPlanOverride(date, manager) {
+  return b2bState.plan.find(x => x.date === date && x.manager === manager) || null;
 }
-function sanitizePlan(items) {
-  const byKey = new Map();
-  for (const item of Array.isArray(items) ? items : []) {
-    const date = normalizePlanDate(item && item.date);
-    const manager = String(item && item.manager || '').trim();
-    const sanatorium = String(item && item.sanatorium || '').trim();
-    const status = ['planned', 'completed', 'cancelled'].includes(String(item && item.status || '').trim())
-      ? String(item.status).trim() : 'planned';
-    if (!date || !manager || !sanatorium) continue;
-    byKey.set(`${date}|${manager}`, { date, manager, sanatorium, status });
+function planningRowsForMonth(month) {
+  const managers = planningManagers();
+  const rows = managers.map(manager => ({ manager, planned: [] }));
+  for (const plan of b2bState.plan.filter(x => x.date.startsWith(month + '-'))) {
+    const row = rows.find(x => x.manager === plan.manager);
+    if (row) row.planned.push(plan);
   }
-  return Array.from(byKey.values()).sort((a, b) => a.date.localeCompare(b.date) || a.manager.localeCompare(b.manager, 'ru'));
+  return rows;
 }
 try {
   const xhr = new XMLHttpRequest();
@@ -1073,93 +1430,22 @@ try {
   }
 } catch (e) { /* fallback: loadB2B() will retry async */ }
 
-function parsePlanStatus(value) {
-  const text = String(value == null ? '' : value).trim().toLowerCase();
-  if (['completed', 'выполнено', 'готово', 'факт'].includes(text)) return 'completed';
-  if (['cancelled', 'cancel', 'cancelled', 'отмена', 'прогул'].includes(text)) return 'cancelled';
-  return 'planned';
-}
-function parseB2BPlanCSV(text) {
-  const rows = parseCSV(text);
-  if (!rows.length) return [];
-  const header = rows[0].map(value => String(value || '').trim().toLowerCase());
-  const findIndex = (names, fallback) => {
-    const index = header.findIndex(value => names.includes(value));
-    return index >= 0 ? index : fallback;
-  };
-  const dateIndex = findIndex(['дата', 'date'], 0);
-  const managerIndex = findIndex(['менеджер', 'manager', 'сотрудник'], 1);
-  const sanatoriumIndex = findIndex(['санаторий', 'санаторий/точка', 'sanatorium', 'точка'], 2);
-  const statusIndex = findIndex(['статус', 'status', 'состояние'], 3);
-  return rows.slice(1).map(row => ({
-    date: normalizePlanDate(row[dateIndex]),
-    manager: String(row[managerIndex] || '').trim(),
-    sanatorium: String(row[sanatoriumIndex] || 'Без санатория').trim() || 'Без санатория',
-    status: parsePlanStatus(row[statusIndex])
-  }));
-}
-async function loadSharedB2BPlan() {
-  try {
-    const response = await fetch(B2B_PLAN_CSV_URL + '&_=' + Date.now(), { cache: 'no-store' });
-    if (!response.ok) throw new Error('HTTP ' + response.status);
-    b2bState.planApiAvailable = true;
-    b2bState.plan = sanitizePlan(parseB2BPlanCSV(await response.text()));
-    b2bState.planUpdatedAt = new Date().toISOString();
-    return true;
-  } catch (error) {
-    b2bState.planApiAvailable = false;
-    console.warn('Google Sheets plan load error:', error.message);
-    return false;
-  }
-}
-function startSharedPlanSync() {
-  if (b2bState.planSyncTimer) clearInterval(b2bState.planSyncTimer);
-  b2bState.planSyncTimer = setInterval(async () => {
-    if (document.visibilityState !== 'visible') return;
-    if (await loadSharedB2BPlan() && state.currentView === 'month') renderMonth();
-  }, 30000);
-}
-function b2bBaseShift(_date, _manager) {
-  // The heatmap has no seeded plan. Actual completed facts come from Google Sheets.
-  return null;
-}
-function b2bPlanOverride(date, manager) {
-  return b2bState.plan.find(x => x.date === date && x.manager === manager) || null;
-}
-function plannedShift(date, manager) {
-  const override = b2bPlanOverride(date, manager);
-  if (override && override.status === 'removed') return null;
-  if (override) return override;
-  const base = b2bBaseShift(date, manager);
-  return base ? { ...base, status: base.status || 'planned' } : null;
-}
-function b2bManagers() {
-  const names = new Set((state.allManagers || []).concat((b2bState.data && b2bState.data.schedule || []).map(x => x.manager)));
-  return Array.from(names).filter(Boolean).sort((a, b) => a.localeCompare(b, 'ru'));
-}
-function b2bMonthRows(month) {
-  const rows = (b2bState.data && b2bState.data.shifts || []).filter(x => x.date.startsWith(month + '-'));
-  const planned = b2bState.plan.filter(x => x.date.startsWith(month + '-')).map(x => ({ ...x, planned: true, rentedPlaces: 0, paidPlaces: 0, freePlaces: 0 }));
-  return rows.concat(planned);
-}
 async function loadB2B() {
   try {
     const response = await fetch('data/b2b-test.json', { cache: 'no-store' });
-    if (!response.ok) throw new Error('HTTP ' + response.status);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     b2bState.data = await response.json();
     b2bState.month = b2bState.data.month || b2bState.month;
     b2bState.loaded = true;
     b2bState.error = null;
-    await loadSharedB2BPlan();
-    if (state.currentView === 'month') renderMonth();
     renderB2B();
-    startSharedPlanSync();
   } catch (e) {
     b2bState.error = e.message || 'Не удалось загрузить локальные B2B-данные';
     const source = document.getElementById('b2b-source');
     if (source) source.textContent = b2bState.error;
   }
 }
+
 
 function parseCSV(text) {
   const rows = []; let row = []; let cell = ''; let inQuotes = false;
@@ -1510,11 +1796,11 @@ function nextPlanStatus(status) {
 }
 
 function renderMonth() {
-  const month = state.currentMonth || new Date().toISOString().slice(0, 7);
+  const month = state.currentMonth || moscowDateKey(new Date()).slice(0, 7);
   const [year, monthNum] = month.split('-').map(Number);
   const daysInMonth = new Date(year, monthNum, 0).getDate();
   const host = document.getElementById('heatmap-host');
-  const totalManagers = state.allManagers.length;
+  const totalManagers = planningManagers().length;
   const ml = cap(monthLabel(month));
   document.getElementById('heatmap-title').textContent = ml + ' — heatmap по дням';
   const ma = monthAggregates(month);
@@ -1524,7 +1810,7 @@ function renderMonth() {
   if (!totalManagers) { host.innerHTML = '<div class="empty-state">📭 Справочник менеджеров пуст</div>'; return; }
 
   let html = '<div class="plan-controls" aria-label="Источник плана">' +
-    '<span class="plan-controls__hint">План загружается из Google Sheets, вкладка «План». Меняйте строки в таблице — dashboard обновится автоматически.</span>' +
+    '<span class="plan-controls__hint">Нажмите на ячейку, чтобы добавить или изменить смену. План сохраняется на VPS и виден всем посетителям.</span>' +
   '</div>';
   html += '<div class="heatmap" style="grid-template-columns:220px repeat(' + daysInMonth + ',32px)">';
   html += '<div class="heatmap__cell heatmap__cell--name" style="font-weight:600;color:var(--txt-3)">Менеджер</div>';
@@ -1533,7 +1819,7 @@ function renderMonth() {
     const isWeekend = wd === 0 || wd === 6;
     html += `<div class="heatmap__cell heatmap__cell--day-num ${isWeekend ? 'heatmap__cell--weekend' : ''}">${d}</div>`;
   }
-  for (const m of state.allManagers) {
+  for (const m of planningManagers()) {
     const s = state.managerStats[m] || {};
     html += `<div class="heatmap__cell heatmap__cell--name">
       <span class="avatar" style="background:${esc(colorFor(m))};color:#fff">${esc(initials(m))}</span>
@@ -1545,24 +1831,29 @@ function renderMonth() {
       const hasReport = s.perDayCount && s.perDayCount[iso];
       const wd = new Date(year, monthNum - 1, d).getDay();
       const isWeekend = wd === 0 || wd === 6;
-      const isFuture = iso > new Date().toISOString().slice(0, 10);
+      const isFuture = iso > moscowDateKey(new Date());
       let cls = 'heatmap__cell';
       let status = 'Нет активности';
       let content = '';
       const planItem = b2bPlanOverride(iso, m);
-      const clickable = false;
-      if (planItem && planItem.status === 'cancelled') {
-        cls += ' heatmap__cell--plan-missed'; status = 'Прогул'; content = '✗';
-      } else if (planItem) {
-        const planDone = planItem.status === 'completed';
-        if (planDone || hasReport) { cls += ' heatmap__cell--plan-done'; status = planDone ? 'План отработан' : 'Активность есть + план'; content = '✓'; }
-        else { cls += ' heatmap__cell--plan'; status = 'Запланировано'; content = '◉'; }
-      } else if (hasReport) { cls += ' heatmap__cell--reported'; status = 'Активность есть'; content = '✓'; }
-      else if (isWeekend) { cls += ' heatmap__cell--weekend'; status = 'Выходной'; content = '·'; }
-      else if (isFuture) { cls += ' heatmap__cell--inactive'; status = 'Будущая дата'; content = '·'; }
-      const attrs = ` data-heatmap-date="${esc(iso)}" data-heatmap-manager="${esc(m)}" data-heatmap-status="${esc(status)}" aria-label="${esc(m + ', ' + formatDateHuman(iso) + ': ' + status)}"` +
-        (clickable ? ` role="button" tabindex="0"` : '');
-      html += `<div class="${esc(cls)}"${attrs} style="cursor:${clickable ? 'pointer' : 'default'}">${content}</div>`;
+      const cellState = planCellState(iso, m);
+      if (cellState === 'completed') {
+        cls += ' heatmap__cell--plan-done'; status = planStatusText(cellState); content = '✓';
+      } else if (cellState === 'missed') {
+        cls += ' heatmap__cell--plan-missed'; status = planStatusText(cellState); content = '✗';
+      } else if (cellState === 'planned') {
+        cls += ' heatmap__cell--plan'; status = planStatusText(cellState); content = '◉';
+      } else if (hasReport) {
+        cls += ' heatmap__cell--reported'; status = 'Есть отчёт'; content = '✓';
+      } else if (isWeekend) {
+        cls += ' heatmap__cell--weekend'; status = 'Выходной'; content = '·';
+      } else if (isFuture) {
+        cls += ' heatmap__cell--inactive'; status = 'Будущая дата'; content = '·';
+      } else {
+        status = 'Нет плана и отчёта';
+      }
+      const attrs = ` data-heatmap-date="${esc(iso)}" data-heatmap-manager="${esc(m)}" data-heatmap-status="${esc(status)}" aria-label="${esc(m + ', ' + formatDateHuman(iso) + ': ' + status)}" role="button" tabindex="0"`;
+      html += `<div class="${esc(cls)}"${attrs}>${content}</div>`;
     }
   }
   html += '</div>';
@@ -1596,9 +1887,9 @@ function renderMonth() {
     cell.addEventListener('mouseleave', hideTip);
     cell.addEventListener('focus', () => showTip(cell));
     cell.addEventListener('blur', hideTip);
-    cell.addEventListener('click', () => { if (cell.getAttribute('role') === 'button') clickHeatmapCell(cell.dataset.heatmapDate, cell.dataset.heatmapManager); });
+    cell.addEventListener('click', () => { if (cell.getAttribute('role') === 'button') openPlanEditor(cell.dataset.heatmapDate, cell.dataset.heatmapManager, cell); });
     cell.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); if (cell.getAttribute('role') === 'button') clickHeatmapCell(cell.dataset.heatmapDate, cell.dataset.heatmapManager); }
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); if (cell.getAttribute('role') === 'button') openPlanEditor(cell.dataset.heatmapDate, cell.dataset.heatmapManager, cell); }
     });
   });
   renderTicker();
@@ -1777,6 +2068,11 @@ function init() {
     }
   });
 
+  initPlanEditor();
+  loadPlanApi().then(() => {
+    if (state.currentView === 'month') renderMonth();
+    startPlanApiSync();
+  });
   refreshData();
   loadB2B();
   startAutoRefresh();
