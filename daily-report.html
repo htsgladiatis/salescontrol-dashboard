@@ -615,6 +615,8 @@ a.nav__item{text-decoration:none}
 .heatmap__cell--plan-missed{background:var(--neg);color:#fff;font-weight:700}
 .heatmap__cell--removed{background:var(--surface-3);color:var(--txt-3);font-style:italic}
 .heatmap__cell[role="button"]{cursor:pointer;transition:transform .16s var(--ease),border-color .16s var(--ease);min-width:32px;min-height:32px}
+.heatmap__cell--city{background:transparent;color:var(--txt-3);font-size:11px;justify-content:flex-start;padding-left:12px;letter-spacing:.04em;text-transform:uppercase}
+.heatmap__cell--place{background:transparent}
 .heatmap__cell[role="button"]:hover,.heatmap__cell[role="button"]:focus-visible{transform:translateY(-2px);border:1px solid var(--lime);outline:none}
 .plan-source-status{font-size:var(--fs-xs);color:var(--txt-3);margin-left:auto}
 .plan-source-status--error{color:var(--neg)}
@@ -1002,6 +1004,50 @@ body.plan-modal-open{overflow:hidden}
 </div>
 
 <script>
+/* Location sub-rows for the month heatmap. Pure functions; no DOM, no network. */
+const LOCATION_NO_CITY = 'Без города';
+const LOCATION_NO_TERMINAL = 'Без точки';
+
+function locationKey(value, fallback) {
+  const text = String(value == null ? '' : value).trim();
+  return text || fallback;
+}
+
+function buildLocationIndex(rawRows, month, managers) {
+  const prefix = String(month) + '-';
+  const names = Array.isArray(managers) ? managers.slice() : [];
+  const byManager = new Map(names.map(name => [name, new Map()]));
+  for (const row of Array.isArray(rawRows) ? rawRows : []) {
+    if (!row || !row.manager || !String(row.dateISO || '').startsWith(prefix)) continue;
+    if (!byManager.has(row.manager)) byManager.set(row.manager, new Map());
+    const cities = byManager.get(row.manager);
+    const city = locationKey(row.city, LOCATION_NO_CITY);
+    const terminal = locationKey(row.terminal, LOCATION_NO_TERMINAL);
+    if (!cities.has(city)) cities.set(city, new Map());
+    const terminals = cities.get(city);
+    if (!terminals.has(terminal)) terminals.set(terminal, { dates: new Set(), count: 0 });
+    const place = terminals.get(terminal);
+    place.dates.add(row.dateISO);
+    place.count += 1;
+  }
+  const sortRu = (a, b) => String(a).localeCompare(String(b), 'ru');
+  return Array.from(byManager.entries()).map(([manager, cities]) => ({
+    manager,
+    cities: Array.from(cities.entries())
+      .sort((a, b) => sortRu(a[0], b[0]))
+      .map(([city, terminals]) => ({
+        city,
+        terminals: Array.from(terminals.entries())
+          .sort((a, b) => sortRu(a[0], b[0]))
+          .map(([terminal, place]) => ({ terminal, dates: Array.from(place.dates).sort(), count: place.count })),
+      })),
+  }));
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { buildLocationIndex, LOCATION_NO_CITY, LOCATION_NO_TERMINAL };
+}
+
 /* ============================================================
    SalesControl — shared VPS plan editor
    The monthly plan is shared state. Google Sheets remains facts-only.
@@ -1095,6 +1141,14 @@ function planHasReport(date, manager) {
 
 function planCellState(date, manager, now = new Date()) {
   return resolvePlanCell(planEntryFor(date, manager), planHasReport(date, manager), date, now);
+}
+
+function planEntryCompleted(planEntry) {
+  return Boolean(planEntry && planEntry.status === 'completed');
+}
+
+function managerPlanOnlyState(planEntry, isoDate, now = new Date()) {
+  return resolvePlanCell(planEntry, false, isoDate, now);
 }
 
 async function planRequest(path, options = {}) {
@@ -1328,6 +1382,8 @@ if (typeof module !== 'undefined' && module.exports) {
     normalizePlanApi,
     normalizePlanReference,
     resolvePlanCell,
+    planEntryCompleted,
+    managerPlanOnlyState,
   };
 }
 
@@ -1795,6 +1851,39 @@ function nextPlanStatus(status) {
   return 'planned';
 }
 
+function monthCellVisual(iso, m, terminalDates, isWeekend, isFuture) {
+  const s = state.managerStats[m] || {};
+  const hasReport = Boolean(s.perDayCount && s.perDayCount[iso]);
+  const planEntry = b2bPlanOverride(iso, m);
+  const cellState = planCellState(iso, m);
+  let shown = cellState;
+  if (terminalDates) {
+    const terminalReport = terminalDates.has(iso);
+    if (cellState === 'completed' && !terminalReport && !planEntryCompleted(planEntry)) {
+      shown = managerPlanOnlyState(planEntry, iso);
+    }
+  }
+  let cls = 'heatmap__cell';
+  let status = 'Нет активности';
+  let content = '';
+  if (shown === 'completed') {
+    cls += ' heatmap__cell--plan-done'; status = planStatusText(shown); content = '✓';
+  } else if (shown === 'missed') {
+    cls += ' heatmap__cell--plan-missed'; status = planStatusText(shown); content = '✗';
+  } else if (shown === 'planned') {
+    cls += ' heatmap__cell--plan'; status = planStatusText(shown); content = '◉';
+  } else if (hasReport && !terminalDates) {
+    cls += ' heatmap__cell--reported'; status = 'Есть отчёт'; content = '✓';
+  } else if (isWeekend) {
+    cls += ' heatmap__cell--weekend'; status = 'Выходной'; content = '·';
+  } else if (isFuture) {
+    cls += ' heatmap__cell--inactive'; status = 'Будущая дата'; content = '·';
+  } else {
+    status = 'Нет плана и отчёта';
+  }
+  return { cls, status, content };
+}
+
 function renderMonth() {
   const month = state.currentMonth || moscowDateKey(new Date()).slice(0, 7);
   const [year, monthNum] = month.split('-').map(Number);
@@ -1819,6 +1908,8 @@ function renderMonth() {
     const isWeekend = wd === 0 || wd === 6;
     html += `<div class="heatmap__cell heatmap__cell--day-num ${isWeekend ? 'heatmap__cell--weekend' : ''}">${d}</div>`;
   }
+  const locationIndex = buildLocationIndex(state.rawRows, month, planningManagers());
+  const locationsByManager = Object.fromEntries(locationIndex.map(entry => [entry.manager, entry.cities]));
   for (const m of planningManagers()) {
     const s = state.managerStats[m] || {};
     html += `<div class="heatmap__cell heatmap__cell--name">
@@ -1828,32 +1919,32 @@ function renderMonth() {
     </div>`;
     for (let d = 1; d <= daysInMonth; d++) {
       const iso = `${year}-${String(monthNum).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const hasReport = s.perDayCount && s.perDayCount[iso];
       const wd = new Date(year, monthNum - 1, d).getDay();
       const isWeekend = wd === 0 || wd === 6;
       const isFuture = iso > moscowDateKey(new Date());
-      let cls = 'heatmap__cell';
-      let status = 'Нет активности';
-      let content = '';
-      const planItem = b2bPlanOverride(iso, m);
-      const cellState = planCellState(iso, m);
-      if (cellState === 'completed') {
-        cls += ' heatmap__cell--plan-done'; status = planStatusText(cellState); content = '✓';
-      } else if (cellState === 'missed') {
-        cls += ' heatmap__cell--plan-missed'; status = planStatusText(cellState); content = '✗';
-      } else if (cellState === 'planned') {
-        cls += ' heatmap__cell--plan'; status = planStatusText(cellState); content = '◉';
-      } else if (hasReport) {
-        cls += ' heatmap__cell--reported'; status = 'Есть отчёт'; content = '✓';
-      } else if (isWeekend) {
-        cls += ' heatmap__cell--weekend'; status = 'Выходной'; content = '·';
-      } else if (isFuture) {
-        cls += ' heatmap__cell--inactive'; status = 'Будущая дата'; content = '·';
-      } else {
-        status = 'Нет плана и отчёта';
+      const v = monthCellVisual(iso, m, null, isWeekend, isFuture);
+      const attrs = ` data-heatmap-date="${esc(iso)}" data-heatmap-manager="${esc(m)}" data-heatmap-status="${esc(v.status)}" aria-label="${esc(m + ', ' + formatDateHuman(iso) + ': ' + v.status)}" role="button" tabindex="0"`;
+      html += `<div class="${esc(v.cls)}"${attrs}>${v.content}</div>`;
+    }
+    for (const cityGroup of locationsByManager[m] || []) {
+      html += `<div class="heatmap__cell heatmap__cell--city" style="grid-column:1/-1">${esc(cityGroup.city)}</div>`;
+      for (const place of cityGroup.terminals) {
+        html += `<div class="heatmap__cell heatmap__cell--name heatmap__cell--place">
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:18px">${esc(place.terminal)}</span>
+          <span style="margin-left:auto;color:var(--txt-3);font-size:11px">${place.count}</span>
+        </div>`;
+        const dateSet = new Set(place.dates);
+        for (let d = 1; d <= daysInMonth; d++) {
+          const iso = `${year}-${String(monthNum).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          const wd = new Date(year, monthNum - 1, d).getDay();
+          const isWeekend = wd === 0 || wd === 6;
+          const isFuture = iso > moscowDateKey(new Date());
+          const v = monthCellVisual(iso, m, dateSet, isWeekend, isFuture);
+          const label = `${m}, ${place.terminal} (${cityGroup.city}), ${formatDateHuman(iso)}: ${v.status}`;
+          const attrs = ` data-heatmap-date="${esc(iso)}" data-heatmap-manager="${esc(m)}" data-heatmap-city="${esc(cityGroup.city)}" data-heatmap-terminal="${esc(place.terminal)}" data-heatmap-status="${esc(v.status)}" aria-label="${esc(label)}" role="button" tabindex="0"`;
+          html += `<div class="${esc(v.cls)}"${attrs}>${v.content}</div>`;
+        }
       }
-      const attrs = ` data-heatmap-date="${esc(iso)}" data-heatmap-manager="${esc(m)}" data-heatmap-status="${esc(status)}" aria-label="${esc(m + ', ' + formatDateHuman(iso) + ': ' + status)}" role="button" tabindex="0"`;
-      html += `<div class="${esc(cls)}"${attrs}>${content}</div>`;
     }
   }
   html += '</div>';
@@ -1873,6 +1964,7 @@ function renderMonth() {
     if (!tip) return;
     tip.innerHTML = '<div class="heatmap-tip__date">' + esc(formatDateHuman(cell.dataset.heatmapDate)) + '</div>' +
       '<div class="heatmap-tip__manager">' + esc(cell.dataset.heatmapManager) + '</div>' +
+      (cell.dataset.heatmapTerminal ? '<div class="heatmap-tip__manager">' + esc(cell.dataset.heatmapCity + ' · ' + cell.dataset.heatmapTerminal) + '</div>' : '') +
       '<div class="heatmap-tip__status">' + esc(cell.dataset.heatmapStatus) + '</div>';
     tip.dataset.on = '1';
     const rect = cell.getBoundingClientRect();
