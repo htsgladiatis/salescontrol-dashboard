@@ -617,6 +617,15 @@ a.nav__item{text-decoration:none}
 .heatmap__cell[role="button"]{cursor:pointer;transition:transform .16s var(--ease),border-color .16s var(--ease);min-width:32px;min-height:32px}
 .heatmap__cell--city{background:transparent;color:var(--txt-3);font-size:11px;justify-content:flex-start;padding-left:12px;letter-spacing:.04em;text-transform:uppercase}
 .heatmap__cell--place{background:transparent}
+.heatmap__cell--add{flex:0 0 24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--lime);border-radius:6px;color:var(--lime);font-size:15px;font-weight:700;cursor:pointer;background:transparent}
+.heatmap__cell--add:hover,.heatmap__cell--add:focus-visible{background:var(--accent-soft);outline:none}
+.heatmap__cell--assigned{font-size:10px;color:var(--warn);border:1px solid var(--warn);border-radius:4px;padding:0 4px;margin-left:6px;white-space:nowrap}
+.location-list{display:flex;flex-direction:column;gap:8px;margin-top:18px}
+.location-list__row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);font-size:var(--fs-sm)}
+.location-list__row button{min-width:44px;min-height:44px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--neg);cursor:pointer}
+.location-list__empty{color:var(--txt-3);font-size:var(--fs-sm)}
+.plan-modal__dialog select{margin-bottom:12px}
+.plan-modal__dialog select:last-of-type{margin-bottom:0}
 .heatmap__cell[role="button"]:hover,.heatmap__cell[role="button"]:focus-visible{transform:translateY(-2px);border:1px solid var(--lime);outline:none}
 .plan-source-status{font-size:var(--fs-xs);color:var(--txt-3);margin-left:auto}
 .plan-source-status--error{color:var(--neg)}
@@ -969,6 +978,24 @@ body.plan-modal-open{overflow:hidden}
           </section>
         </div>
 
+        <div class="plan-modal" id="location-modal" hidden aria-hidden="true">
+          <div class="plan-modal__backdrop" data-close-location></div>
+          <section class="plan-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="location-modal-title">
+            <h2 id="location-modal-title">Локации менеджера</h2>
+            <p class="plan-modal__context"><span id="location-manager"></span></p>
+            <label for="location-city">Город</label>
+            <select id="location-city"></select>
+            <label for="location-terminal">Точка</label>
+            <select id="location-terminal"></select>
+            <p class="plan-modal__error" id="location-error" role="alert" hidden></p>
+            <div class="plan-modal__actions">
+              <button type="button" id="location-cancel">Отмена</button>
+              <button type="button" id="location-add" class="btn--primary">Добавить</button>
+            </div>
+            <div class="location-list" id="location-list"></div>
+          </section>
+        </div>
+
         <section id="view-b2b" style="display:none">
           <div class="report-table__header" style="margin-bottom:var(--sp-4)">
             <div><div class="report-table__title">B2B · выработка смен санатория</div><div class="report-table__hint">Заполненность оплаченных арендованных мест</div></div>
@@ -1044,8 +1071,39 @@ function buildLocationIndex(rawRows, month, managers) {
   }));
 }
 
+function mergeAssignedLocations(index, assignments) {
+  const result = (Array.isArray(index) ? index : []).map(entry => ({
+    manager: entry.manager,
+    cities: entry.cities.map(group => ({
+      city: group.city,
+      terminals: group.terminals.map(place => ({
+        terminal: place.terminal,
+        dates: place.dates.slice(),
+        count: place.count || 0,
+        assigned: Boolean(place.assigned),
+      })),
+    })),
+  }));
+  const byManager = new Map(result.map(entry => [entry.manager, entry]));
+  const sortRu = (a, b) => String(a).localeCompare(String(b), 'ru');
+  for (const item of Array.isArray(assignments) ? assignments : []) {
+    const manager = String(item && item.manager || '').trim();
+    const city = String(item && item.city || '').trim();
+    const terminal = String(item && item.terminal || '').trim();
+    if (!manager || !city || !terminal) continue;
+    let entry = byManager.get(manager);
+    if (!entry) { entry = { manager, cities: [] }; byManager.set(manager, entry); result.push(entry); }
+    let group = entry.cities.find(c => c.city === city);
+    if (!group) { group = { city, terminals: [] }; entry.cities.push(group); entry.cities.sort((a, b) => sortRu(a.city, b.city)); }
+    let place = group.terminals.find(t => t.terminal === terminal);
+    if (!place) { place = { terminal, dates: [], count: 0, assigned: false }; group.terminals.push(place); group.terminals.sort((a, b) => sortRu(a.terminal, b.terminal)); }
+    place.assigned = true;
+  }
+  return result;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { buildLocationIndex, LOCATION_NO_CITY, LOCATION_NO_TERMINAL };
+  module.exports = { buildLocationIndex, mergeAssignedLocations, LOCATION_NO_CITY, LOCATION_NO_TERMINAL };
 }
 
 /* ============================================================
@@ -1061,7 +1119,8 @@ const planEditorState = {
   loaded: false,
   error: null,
   plan: [],
-  reference: { managers: [], sanatoria: [] },
+  locations: [],
+  reference: { managers: [], sanatoria: [], terminals: [] },
   updatedAt: null,
   syncTimer: null,
   modal: null,
@@ -1098,10 +1157,36 @@ function normalizePlanReference(reference) {
   const managers = Array.from(new Set((Array.isArray(source.managers) ? source.managers : []).map(x => String(x || '').trim()).filter(Boolean)));
   const sanatoria = Array.from(new Set((Array.isArray(source.sanatoria) ? source.sanatoria : []).map(x => String(x || '').trim()).filter(Boolean)));
   if (!sanatoria.includes(PLAN_UNSPECIFIED)) sanatoria.push(PLAN_UNSPECIFIED);
+  const terminals = (Array.isArray(source.terminals) ? source.terminals : [])
+    .filter(t => t && t.name && t.city)
+    .map(t => ({ name: String(t.name).trim(), city: String(t.city).trim() }));
   return {
     managers: planSort(managers.map(name => ({ name })), 'name').map(x => x.name),
     sanatoria: planSort(sanatoria.map(name => ({ name })), 'name').map(x => x.name),
+    terminals: terminals.sort((a, b) => a.city.localeCompare(b.city, 'ru') || a.name.localeCompare(b.name, 'ru')),
   };
+}
+
+function locationCities() {
+  return Array.from(new Set(planEditorState.reference.terminals.map(t => t.city))).sort((a, b) => a.localeCompare(b, 'ru'));
+}
+
+function locationTerminalsFor(city) {
+  return planEditorState.reference.terminals.filter(t => t.city === city).map(t => t.name);
+}
+
+function assignedLocationsFor(manager) {
+  return planEditorState.locations.filter(item => item.manager === manager);
+}
+
+async function loadLocations() {
+  try {
+    const payload = await planRequest('/api/plan/locations');
+    planEditorState.locations = Array.isArray(payload.locations) ? payload.locations : [];
+    return true;
+  } catch (error) {
+    return false;
+  }
 }
 
 function moscowDateKey(now) {
@@ -1208,7 +1293,8 @@ function startPlanApiSync() {
   planEditorState.syncTimer = setInterval(async () => {
     if (document.visibilityState !== 'visible') return;
     const changed = await loadPlanApi();
-    if (changed && state.currentView === 'month') renderMonth();
+    const locChanged = await loadLocations();
+    if ((changed || locChanged) && state.currentView === 'month') renderMonth();
   }, PLAN_SYNC_INTERVAL_MS);
 }
 
@@ -1357,6 +1443,134 @@ async function deletePlanCell() {
   } finally {
     button.disabled = false;
   }
+}
+
+function setLocationError(message) {
+  const error = document.getElementById('location-error');
+  if (error) {
+    error.textContent = message || '';
+    error.hidden = !message;
+  }
+  planEditorState.saving = false;
+}
+
+function refreshLocationTerminals() {
+  const city = document.getElementById('location-city').value;
+  const select = document.getElementById('location-terminal');
+  const values = locationTerminalsFor(city);
+  select.innerHTML = values.map(name => '<option value="' + esc(name) + '">' + esc(name) + '</option>').join('');
+  document.getElementById('location-add').disabled = !values.length;
+}
+
+function refreshLocationList(manager) {
+  const host = document.getElementById('location-list');
+  if (!host) return;
+  const items = assignedLocationsFor(manager);
+  host.innerHTML = items.length
+    ? items.map(item => '<div class="location-list__row"><span>' + esc(item.city) + ' · ' + esc(item.terminal) + '</span>' +
+      '<button type="button" data-delete-location="' + esc(item.city) + '|' + esc(item.terminal) + '">✕</button></div>').join('')
+    : '<div class="location-list__empty">Нет закреплённых локаций</div>';
+  host.querySelectorAll('[data-delete-location]').forEach(button => {
+    button.addEventListener('click', () => {
+      const sep = button.dataset.deleteLocation.indexOf('|');
+      deleteLocationPin(manager, button.dataset.deleteLocation.slice(0, sep), button.dataset.deleteLocation.slice(sep + 1), button);
+    });
+  });
+}
+
+function openLocationEditor(manager) {
+  const modal = document.getElementById('location-modal');
+  if (!modal) return;
+  planEditorState.originCell = null;
+  document.getElementById('location-manager').textContent = manager;
+  const citySelect = document.getElementById('location-city');
+  const cities = locationCities();
+  citySelect.innerHTML = cities.map(name => '<option value="' + esc(name) + '">' + esc(name) + '</option>').join('');
+  if (!cities.length) {
+    setLocationError('Справочник локаций недоступен. Проверьте соединение с VPS.');
+    document.getElementById('location-add').disabled = true;
+  } else {
+    setLocationError('');
+    refreshLocationTerminals();
+  }
+  refreshLocationList(manager);
+  modal.hidden = false;
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('plan-modal-open');
+  citySelect.focus();
+}
+
+function closeLocationEditor() {
+  const modal = document.getElementById('location-modal');
+  if (!modal) return;
+  modal.hidden = true;
+  modal.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('plan-modal-open');
+  planEditorState.saving = false;
+}
+
+async function saveLocation() {
+  if (planEditorState.saving) return;
+  const manager = document.getElementById('location-manager').textContent.trim();
+  const city = document.getElementById('location-city').value;
+  const terminal = document.getElementById('location-terminal').value;
+  if (!manager || !city || !terminal) return setLocationError('Выберите город и точку.');
+  planEditorState.saving = true;
+  setLocationError('');
+  try {
+    const payload = await planRequest('/api/plan/locations', {
+      method: 'PUT',
+      body: { manager, city, terminal },
+    });
+    planEditorState.locations = Array.isArray(payload.locations) ? payload.locations : [];
+    refreshLocationList(manager);
+    if (state.currentView === 'month') renderMonth();
+    showToast('Локация закреплена');
+  } catch (error) {
+    setLocationError(error.message || 'Не удалось сохранить локацию');
+    showToast('Не удалось сохранить. Повторите', true);
+  } finally {
+    planEditorState.saving = false;
+  }
+}
+
+async function deleteLocationPin(manager, city, terminal, button) {
+  if (planEditorState.saving) return;
+  if (!button || button.dataset.confirmed !== 'true') {
+    if (button) { button.dataset.confirmed = 'true'; button.textContent = 'Точно?'; }
+    return;
+  }
+  planEditorState.saving = true;
+  button.disabled = true;
+  try {
+    const payload = await planRequest('/api/plan/locations', {
+      method: 'DELETE',
+      body: { manager, city, terminal },
+    });
+    planEditorState.locations = Array.isArray(payload.locations) ? payload.locations : [];
+    refreshLocationList(manager);
+    if (state.currentView === 'month') renderMonth();
+    showToast('Локация удалена');
+  } catch (error) {
+    setLocationError(error.message || 'Не удалось удалить локацию');
+    showToast('Не удалось удалить. Повторите', true);
+  } finally {
+    planEditorState.saving = false;
+    button.disabled = false;
+  }
+}
+
+function initLocationEditor() {
+  const modal = document.getElementById('location-modal');
+  if (!modal || modal.dataset.initialized) return;
+  modal.dataset.initialized = 'true';
+  document.getElementById('location-city').addEventListener('change', refreshLocationTerminals);
+  document.getElementById('location-add').addEventListener('click', saveLocation);
+  document.getElementById('location-cancel').addEventListener('click', closeLocationEditor);
+  modal.querySelector('[data-close-location]').addEventListener('click', closeLocationEditor);
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !modal.hidden) closeLocationEditor();
+  });
 }
 
 function initPlanEditor() {
@@ -1915,7 +2129,7 @@ function renderMonth() {
     const isWeekend = wd === 0 || wd === 6;
     html += `<div class="heatmap__cell heatmap__cell--day-num ${isWeekend ? 'heatmap__cell--weekend' : ''}">${d}</div>`;
   }
-  const locationIndex = buildLocationIndex(state.rawRows, month, planningManagers());
+  const locationIndex = mergeAssignedLocations(buildLocationIndex(state.rawRows, month, planningManagers()), planEditorState.locations);
   const locationsByManager = Object.fromEntries(locationIndex.map(entry => [entry.manager, entry.cities]));
   for (const m of planningManagers()) {
     const s = state.managerStats[m] || {};
@@ -1926,6 +2140,7 @@ function renderMonth() {
       ? ` role="button" tabindex="0" aria-expanded="${expanded}" data-expand-manager="${esc(m)}" aria-label="${esc(m + ': ' + (expanded ? 'свернуть локации' : 'показать локации'))}" style="cursor:pointer"`
       : '';
     html += `<div class="heatmap__cell heatmap__cell--name heatmap__cell--manager"${nameAttrs}>
+      <span class="heatmap__cell--add" role="button" tabindex="0" data-add-location="${esc(m)}" aria-label="Добавить локацию: ${esc(m)}" title="Добавить локацию">+</span>
       <span class="avatar" style="background:${esc(colorFor(m))};color:#fff">${esc(initials(m))}</span>
       <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m)}</span>
       ${chevron}
@@ -1945,6 +2160,7 @@ function renderMonth() {
       for (const place of cityGroup.terminals) {
         html += `<div class="heatmap__cell heatmap__cell--name heatmap__cell--place">
           <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:18px">${esc(place.terminal)}</span>
+          ${place.assigned ? '<span class="heatmap__cell--assigned">назначена</span>' : ''}
           <span style="margin-left:auto;color:var(--txt-3);font-size:11px">${place.count}</span>
         </div>`;
         const dateSet = new Set(place.dates);
@@ -1992,6 +2208,12 @@ function renderMonth() {
     cell.addEventListener('click', () => toggleManagerLocations(cell.dataset.expandManager));
     cell.addEventListener('keydown', (event) => {
       if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleManagerLocations(cell.dataset.expandManager); }
+    });
+  });
+  host.querySelectorAll('[data-add-location]').forEach(button => {
+    button.addEventListener('click', (event) => { event.stopPropagation(); openLocationEditor(button.dataset.addLocation); });
+    button.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.stopPropagation(); openLocationEditor(button.dataset.addLocation); }
     });
   });
   host.querySelectorAll('[data-heatmap-date]').forEach(cell => {
@@ -2181,9 +2403,13 @@ function init() {
   });
 
   initPlanEditor();
+  initLocationEditor();
   loadPlanApi().then(() => {
     if (state.currentView === 'month') renderMonth();
     startPlanApiSync();
+  });
+  loadLocations().then(() => {
+    if (state.currentView === 'month') renderMonth();
   });
   refreshData();
   loadB2B();
