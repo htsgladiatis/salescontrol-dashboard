@@ -1236,6 +1236,14 @@ function managerPlanOnlyState(planEntry, isoDate, now = new Date()) {
   return resolvePlanCell(planEntry, false, isoDate, now);
 }
 
+function terminalPlanState(planEntry, terminalName, hasTerminalReport, isoDate, now = new Date()) {
+  if (hasTerminalReport || planEntryCompleted(planEntry)) return 'completed';
+  if (planEntry && planEntry.sanatorium === terminalName) {
+    return managerPlanOnlyState(planEntry, isoDate, now);
+  }
+  return 'empty';
+}
+
 async function planRequest(path, options = {}) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), PLAN_API_TIMEOUT_MS);
@@ -1372,7 +1380,8 @@ function openPlanEditor(date, manager, originCell) {
   planEditorState.originCell = originCell || null;
   document.getElementById('plan-manager').textContent = manager;
   document.getElementById('plan-date').textContent = formatDateHuman(date);
-  fillPlanSanatoria(entry ? entry.sanatorium : PLAN_UNSPECIFIED);
+  const cellTerminal = originCell && originCell.dataset ? originCell.dataset.heatmapTerminal : null;
+  fillPlanSanatoria(entry ? entry.sanatorium : (cellTerminal || PLAN_UNSPECIFIED));
   setPlanStatus(entry ? entry.status : 'planned');
   const deleteButton = document.getElementById('plan-delete');
   if (deleteButton) {
@@ -1598,6 +1607,7 @@ if (typeof module !== 'undefined' && module.exports) {
     resolvePlanCell,
     planEntryCompleted,
     managerPlanOnlyState,
+    terminalPlanState,
   };
 }
 
@@ -2072,17 +2082,14 @@ function nextPlanStatus(status) {
   return 'planned';
 }
 
-function monthCellVisual(iso, m, terminalDates, isWeekend, isFuture) {
+function monthCellVisual(iso, m, terminalDates, isWeekend, isFuture, terminalName) {
   const s = state.managerStats[m] || {};
   const hasReport = Boolean(s.perDayCount && s.perDayCount[iso]);
   const planEntry = b2bPlanOverride(iso, m);
   const cellState = planCellState(iso, m);
   let shown = cellState;
   if (terminalDates) {
-    const terminalReport = terminalDates.has(iso);
-    if (cellState === 'completed' && !terminalReport && !planEntryCompleted(planEntry)) {
-      shown = managerPlanOnlyState(planEntry, iso);
-    }
+    shown = terminalPlanState(planEntry, terminalName, terminalDates.has(iso), iso);
   }
   let cls = 'heatmap__cell';
   let status = 'Нет активности';
@@ -2169,7 +2176,7 @@ function renderMonth() {
           const wd = new Date(year, monthNum - 1, d).getDay();
           const isWeekend = wd === 0 || wd === 6;
           const isFuture = iso > moscowDateKey(new Date());
-          const v = monthCellVisual(iso, m, dateSet, isWeekend, isFuture);
+          const v = monthCellVisual(iso, m, dateSet, isWeekend, isFuture, place.terminal);
           const label = `${m}, ${place.terminal} (${cityGroup.city}), ${formatDateHuman(iso)}: ${v.status}`;
           const attrs = ` data-heatmap-date="${esc(iso)}" data-heatmap-manager="${esc(m)}" data-heatmap-city="${esc(cityGroup.city)}" data-heatmap-terminal="${esc(place.terminal)}" data-heatmap-status="${esc(v.status)}" aria-label="${esc(label)}" role="button" tabindex="0"`;
           html += `<div class="${esc(v.cls)}"${attrs}>${v.content}</div>`;
