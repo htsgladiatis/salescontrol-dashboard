@@ -1463,6 +1463,13 @@ const state = {
 
 // План хранится на VPS. Google Sheets ниже остаётся только источником фактов.
 const b2bState = { data: null, loaded: false, error: null, month: '2026-09', plan: [], planSyncTimer: null, planApiAvailable: false, planUpdatedAt: null };
+// Раскрытые менеджеры в month heatmap (аккордеон локаций, только текущая вкладка).
+const expandedManagers = new Set();
+function toggleManagerLocations(manager) {
+  if (expandedManagers.has(manager)) expandedManagers.delete(manager);
+  else expandedManagers.add(manager);
+  if (state.currentView === 'month') renderMonth();
+}
 function b2bPlanOverride(date, manager) {
   return b2bState.plan.find(x => x.date === date && x.manager === manager) || null;
 }
@@ -1912,9 +1919,16 @@ function renderMonth() {
   const locationsByManager = Object.fromEntries(locationIndex.map(entry => [entry.manager, entry.cities]));
   for (const m of planningManagers()) {
     const s = state.managerStats[m] || {};
-    html += `<div class="heatmap__cell heatmap__cell--name">
+    const cities = locationsByManager[m] || [];
+    const expanded = expandedManagers.has(m);
+    const chevron = cities.length ? `<span style="color:var(--txt-3);font-size:11px">${expanded ? '▼' : '▶'}</span>` : '';
+    const nameAttrs = cities.length
+      ? ` role="button" tabindex="0" aria-expanded="${expanded}" data-expand-manager="${esc(m)}" aria-label="${esc(m + ': ' + (expanded ? 'свернуть локации' : 'показать локации'))}" style="cursor:pointer"`
+      : '';
+    html += `<div class="heatmap__cell heatmap__cell--name heatmap__cell--manager"${nameAttrs}>
       <span class="avatar" style="background:${esc(colorFor(m))};color:#fff">${esc(initials(m))}</span>
       <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m)}</span>
+      ${chevron}
       <span style="margin-left:auto;color:var(--txt-3);font-size:11px">${s.totalReports || 0}</span>
     </div>`;
     for (let d = 1; d <= daysInMonth; d++) {
@@ -1926,7 +1940,7 @@ function renderMonth() {
       const attrs = ` data-heatmap-date="${esc(iso)}" data-heatmap-manager="${esc(m)}" data-heatmap-status="${esc(v.status)}" aria-label="${esc(m + ', ' + formatDateHuman(iso) + ': ' + v.status)}" role="button" tabindex="0"`;
       html += `<div class="${esc(v.cls)}"${attrs}>${v.content}</div>`;
     }
-    for (const cityGroup of locationsByManager[m] || []) {
+    for (const cityGroup of (expanded ? locationsByManager[m] || [] : [])) {
       html += `<div class="heatmap__cell heatmap__cell--city" style="grid-column:1/-1">${esc(cityGroup.city)}</div>`;
       for (const place of cityGroup.terminals) {
         html += `<div class="heatmap__cell heatmap__cell--name heatmap__cell--place">
@@ -1974,6 +1988,12 @@ function renderMonth() {
     tip.style.top = Math.max(8, top) + 'px';
   };
   const hideTip = () => { if (tip) tip.dataset.on = '0'; };
+  host.querySelectorAll('[data-expand-manager]').forEach(cell => {
+    cell.addEventListener('click', () => toggleManagerLocations(cell.dataset.expandManager));
+    cell.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleManagerLocations(cell.dataset.expandManager); }
+    });
+  });
   host.querySelectorAll('[data-heatmap-date]').forEach(cell => {
     cell.addEventListener('mouseenter', () => showTip(cell));
     cell.addEventListener('mouseleave', hideTip);
